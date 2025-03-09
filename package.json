@@ -9,7 +9,7 @@
     "package.json"
   ],
   "scripts": {
-    "start": "ts-node -r tsconfig-paths/register src/index.ts",
+    "tlox": "ts-node -r tsconfig-paths/register src/index.ts",
     "test": "jest",
     "lint": "eslint . --ext .ts",
     "lint:fix": "eslint . --ext .ts --fix",
