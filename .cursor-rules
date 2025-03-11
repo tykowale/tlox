@@ -3,6 +3,14 @@
   "description": "A set of rules designed to facilitate learning by doing, emphasizing understanding over direct solutions",
   "rules": [
     {
+      "name": "Absolute Imports",
+      "description": "Use absolute imports from src root directory instead of relative paths",
+      "examples": {
+        "good": "import { Something } from 'src/components/Something'",
+        "bad": "import { Something } from '../components/Something'"
+      }
+    },
+    {
       "name": "Explanations Over Solutions",
       "description": "Provide conceptual explanations and context instead of direct code solutions. Break down what the code needs to accomplish and explain relevant programming concepts."
     },

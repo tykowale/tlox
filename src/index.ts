@@ -2,15 +2,15 @@ import fs from 'fs';
 import readline from 'readline';
 import { Scanner } from 'src/Scanner';
 
-class Lox {
-  private hadError: boolean = false;
+export class Lox {
+  protected static hadError: boolean = false;
 
-  public runFile(path: string): void {
+  public static runFile(path: string): void {
     try {
       const buffer = fs.readFileSync(path);
-      this.run(buffer.toString('utf8'));
+      Lox.run(buffer.toString('utf8'));
 
-      if (this.hadError) {
+      if (Lox.hadError) {
         process.exit(65);
       }
     } catch (e) {
@@ -20,7 +20,7 @@ class Lox {
     }
   }
 
-  public runPrompt(): void {
+  public static runPrompt(): void {
     const rl = readline.createInterface({
       input: process.stdin,
       output: process.stdout,
@@ -30,8 +30,8 @@ class Lox {
     rl.prompt();
 
     rl.on('line', (line: string) => {
-      this.run(line);
-      this.hadError = false;
+      Lox.run(line);
+      Lox.hadError = false;
       rl.prompt();
     });
 
@@ -40,31 +40,29 @@ class Lox {
     });
   }
 
-  private run(source: string): void {
+  protected static run(source: string): void {
     const scanner = new Scanner(source);
     scanner.scanTokens();
   }
 
-  public error(line: number, message: string): void {
-    this.report(line, '', message);
+  public static error(line: number, message: string): void {
+    Lox.report(line, '', message);
   }
 
-  private report(line: number, where: string, message: string): void {
+  protected static report(line: number, where: string, message: string): void {
     console.error(`[line ${line}] Error${where}: ${message}`);
-    this.hadError = true;
+    Lox.hadError = true;
   }
 }
 
 function main(args: string[]): void {
-  const lox = new Lox();
-
   if (args.length > 1) {
     console.log('Usage: tlox [script]');
     process.exit(64);
   } else if (args.length === 1) {
-    lox.runFile(args[0]);
+    Lox.runFile(args[0]);
   } else {
-    lox.runPrompt();
+    Lox.runPrompt();
   }
 }
 
