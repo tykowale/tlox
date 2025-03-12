@@ -42,7 +42,11 @@ export class Lox {
 
   protected static run(source: string): void {
     const scanner = new Scanner(source);
-    scanner.scanTokens();
+    const tokens = scanner.scanTokens();
+
+    for (const token of tokens) {
+      console.log(token);
+    }
   }
 
   public static error(line: number, message: string): void {

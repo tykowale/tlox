@@ -3,6 +3,25 @@ import { TokenType } from 'src/TokenType';
 import { Lox } from 'src/index';
 
 export class Scanner {
+  private static readonly keywords = new Map<string, TokenType>([
+    ['and', 'AND'],
+    ['class', 'CLASS'],
+    ['else', 'ELSE'],
+    ['false', 'FALSE'],
+    ['for', 'FOR'],
+    ['fun', 'FUN'],
+    ['if', 'IF'],
+    ['nil', 'NIL'],
+    ['or', 'OR'],
+    ['print', 'PRINT'],
+    ['return', 'RETURN'],
+    ['super', 'SUPER'],
+    ['this', 'THIS'],
+    ['true', 'TRUE'],
+    ['var', 'VAR'],
+    ['while', 'WHILE'],
+  ]);
+
   constructor(
     private source: string,
     private tokens: Token[] = [],
@@ -92,7 +111,13 @@ export class Scanner {
         this.string();
         break;
       default:
-        Lox.error(this.line, 'Unexpected character.');
+        if (this.isDigit(c)) {
+          this.number();
+        } else if (this.isAlpha(c)) {
+          this.identifier();
+        } else {
+          Lox.error(this.line, 'Unexpected character.');
+        }
         break;
     }
   }
@@ -107,6 +132,14 @@ export class Scanner {
     }
 
     return this.source.charAt(this.current);
+  }
+
+  private peekNext(): string {
+    if (this.current + 1 >= this.source.length) {
+      return '\0';
+    }
+
+    return this.source.charAt(this.current + 1);
   }
 
   private addToken(type: TokenType, literal: unknown = null): void {
@@ -144,5 +177,49 @@ export class Scanner {
 
     const value = this.source.slice(this.start + 1, this.current - 1);
     this.addToken('STRING', value);
+  }
+
+  private isDigit(c: string): boolean {
+    return c >= '0' && c <= '9';
+  }
+
+  private number(): void {
+    while (this.isDigit(this.peek())) {
+      this.advance();
+    }
+
+    if (this.peek() === '.' && this.isDigit(this.peekNext())) {
+      // consume the .
+      this.advance();
+
+      while (this.isDigit(this.peek())) {
+        this.advance();
+      }
+    }
+
+    this.addToken('NUMBER', Number(this.source.slice(this.start, this.current)));
+  }
+
+  private identifier(): void {
+    while (this.isAlphaNumeric(this.peek())) {
+      this.advance();
+    }
+
+    const text = this.source.slice(this.start, this.current);
+    let type = Scanner.keywords.get(text);
+
+    if (type == null) {
+      type = 'IDENTIFIER';
+    }
+
+    this.addToken(type);
+  }
+
+  private isAlpha(c: string): boolean {
+    return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c === '_';
+  }
+
+  private isAlphaNumeric(c: string): boolean {
+    return this.isAlpha(c) || this.isDigit(c);
   }
 }
