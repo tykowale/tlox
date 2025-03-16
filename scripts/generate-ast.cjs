@@ -28,10 +28,32 @@ const exprDefinitions = [
   },
 ];
 
+function defineType(writer, baseName, className, fieldList) {
+  writer.writeln('');
+  writer.writeln(`export class ${className} implements ${baseName} {`);
+
+  writer.writeln(`  constructor(`);
+  for (const field of fieldList) {
+    writer.writeln(`    public readonly ${field.name}: ${field.type},`);
+  }
+
+  writer.writeln(`  ) {}`);
+  writer.writeln('}');
+}
+
 function defineAst(outputDir, baseName) {
   const outputPath = path.join(outputDir, `${baseName}.ts`);
   const writer = new PrintWriter(outputPath);
   writer.writeln(`import { Token } from 'src/Token';`);
+  writer.writeln('');
+
+  writer.writeln(`export interface ${baseName} {`);
+  writer.writeln('}');
+
+  for (const expr of exprDefinitions) {
+    defineType(writer, baseName, expr.className, expr.args);
+  }
+
   writer.close();
 }
 
