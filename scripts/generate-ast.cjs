@@ -3,7 +3,9 @@ const fs = require('fs');
 const PrintWriter = require('./PrintWriter.cjs');
 
 /**
- * Usage: node scripts/generate-ast.cjs ./src
+ * Generates the Expr.ts file in the src directory.
+ * 
+ * Usage: node scripts/generate-ast.cjs
  */
 //------------------------------------------------------------------------------
 // AST Type Definitions
@@ -37,54 +39,90 @@ const exprDefinitions = [
 //------------------------------------------------------------------------------
 // Code Generation Functions
 //------------------------------------------------------------------------------
-function defineVisitor(writer) {
+function defineUnionType(writer) {
+  writer.writeln(`export type Expr = ${exprDefinitions
+    .map(def => `${def.className}Expr`)
+    .join(' | ')};`);
   writer.writeln('');
-  writer.writeln(`export interface Visitor<R> {`);
-
-  for (const expr of exprDefinitions) {
-    writer.writeln(`  visit${expr.className}Expr(expr: ${expr.className}): R;`);
-  }
-
-  writer.writeln('}');
 }
 
-function defineType(writer, baseName, className, fieldList) {
-  writer.writeln('');
-  writer.writeln(`export class ${className} implements ${baseName} {`);
-
-  writer.writeln(`  constructor(`);
-
+function defineInterface(writer, className, fieldList) {
+  writer.writeln(`export interface ${className}Expr {`);
+  writer.writeln(`  type: '${className.toLowerCase()}';`);
+  
   for (const field of fieldList) {
-    writer.writeln(`    public readonly ${field.name}: ${field.type},`);
+    writer.writeln(`  ${field.name}: ${field.type};`);
   }
-
-  writer.writeln(`  ) {}`);
-
+  
+  writer.writeln('}');
   writer.writeln('');
-  writer.writeln('  accept<R>(visitor: Visitor<R>): R {');
-  writer.writeln(`    return visitor.visit${className}Expr(this);`);
+}
+
+function defineFactory(writer, className, fieldList) {
+  const params = fieldList
+    .map(field => `${field.name}: ${field.type}`)
+    .join(', ');
+  
+  writer.writeln(`export function create${className}(${params}): ${className}Expr {`);
+  writer.writeln('  return {');
+  writer.writeln(`    type: '${className.toLowerCase()}',`);
+  
+  for (const field of fieldList) {
+    writer.writeln(`    ${field.name},`);
+  }
+  
+  writer.writeln('  };');
+  writer.writeln('}');
+  writer.writeln('');
+}
+
+function defineMatcher(writer) {
+  writer.writeln('export type ExprMatcher<R> = {');
+  
+  for (const expr of exprDefinitions) {
+    const typeName = expr.className.toLowerCase();
+    writer.writeln(`  ${typeName}: (expr: ${expr.className}Expr) => R;`);
+  }
+  
+  writer.writeln('};');
+  writer.writeln('');
+}
+
+function defineMatchFunction(writer) {
+  writer.writeln('export function matchExpr<R>(expr: Expr, matcher: ExprMatcher<R>): R {');
+  writer.writeln('  switch (expr.type) {');
+  
+  for (const expr of exprDefinitions) {
+    const typeName = expr.className.toLowerCase();
+    writer.writeln(`    case '${typeName}':`);
+    writer.writeln(`      return matcher.${typeName}(expr as ${expr.className}Expr);`);
+  }
+  
   writer.writeln('  }');
   writer.writeln('}');
 }
 
-function defineAst(outputDir, baseName) {
-  const outputPath = path.join(outputDir, `${baseName}.ts`);
+function generateAst() {
+  const outputPath = path.join(__dirname, '..', 'src', 'Expr.ts');
   const writer = new PrintWriter(outputPath);
-  
+
   writer.writeln(`import { Token } from 'src/Token';`);
   writer.writeln('');
+
+  defineUnionType(writer);
   
-  defineVisitor(writer);
-  writer.writeln('');
-
-  writer.writeln(`export interface ${baseName} {`);
-  writer.writeln('  accept<R>(visitor: Visitor<R>): R;');
-  writer.writeln('}');
-
   for (const expr of exprDefinitions) {
-    defineType(writer, baseName, expr.className, expr.args);
+    defineInterface(writer, expr.className, expr.args);
   }
-
+  
+  for (const expr of exprDefinitions) {
+    defineFactory(writer, expr.className, expr.args);
+  }
+  
+  defineMatcher(writer);
+  
+  defineMatchFunction(writer);
+  
   writer.close();
   console.log(`Generated ${outputPath}`);
 }
@@ -92,14 +130,4 @@ function defineAst(outputDir, baseName) {
 //------------------------------------------------------------------------------
 // Main Execution
 //------------------------------------------------------------------------------
-function main(args) {
-  if (args.length !== 1) {
-    console.error('Usage: node scripts/generate-ast.cjs <output directory>');
-    process.exit(64);
-  }
-
-  const outputDir = args[0];
-  defineAst(outputDir, 'Expr');
-}
-
-main(process.argv.slice(2));
+generateAst();

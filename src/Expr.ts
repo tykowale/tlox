@@ -1,51 +1,77 @@
 import { Token } from 'src/Token';
 
-export interface Visitor<R> {
-  visitBinaryExpr(expr: Binary): R;
-  visitGroupingExpr(expr: Grouping): R;
-  visitLiteralExpr(expr: Literal): R;
-  visitUnaryExpr(expr: Unary): R;
+export type Expr = BinaryExpr | GroupingExpr | LiteralExpr | UnaryExpr;
+
+export interface BinaryExpr {
+  type: 'binary';
+  left: Expr;
+  operator: Token;
+  right: Expr;
 }
 
-export interface Expr {
-  accept<R>(visitor: Visitor<R>): R;
+export interface GroupingExpr {
+  type: 'grouping';
+  expression: Expr;
 }
 
-export class Binary implements Expr {
-  constructor(
-    public readonly left: Expr,
-    public readonly operator: Token,
-    public readonly right: Expr,
-  ) {}
-
-  accept<R>(visitor: Visitor<R>): R {
-    return visitor.visitBinaryExpr(this);
-  }
+export interface LiteralExpr {
+  type: 'literal';
+  value: unknown;
 }
 
-export class Grouping implements Expr {
-  constructor(public readonly expression: Expr) {}
-
-  accept<R>(visitor: Visitor<R>): R {
-    return visitor.visitGroupingExpr(this);
-  }
+export interface UnaryExpr {
+  type: 'unary';
+  operator: Token;
+  right: Expr;
 }
 
-export class Literal implements Expr {
-  constructor(public readonly value: unknown) {}
-
-  accept<R>(visitor: Visitor<R>): R {
-    return visitor.visitLiteralExpr(this);
-  }
+export function createBinary(left: Expr, operator: Token, right: Expr): BinaryExpr {
+  return {
+    type: 'binary',
+    left,
+    operator,
+    right,
+  };
 }
 
-export class Unary implements Expr {
-  constructor(
-    public readonly operator: Token,
-    public readonly right: Expr,
-  ) {}
+export function createGrouping(expression: Expr): GroupingExpr {
+  return {
+    type: 'grouping',
+    expression,
+  };
+}
 
-  accept<R>(visitor: Visitor<R>): R {
-    return visitor.visitUnaryExpr(this);
+export function createLiteral(value: unknown): LiteralExpr {
+  return {
+    type: 'literal',
+    value,
+  };
+}
+
+export function createUnary(operator: Token, right: Expr): UnaryExpr {
+  return {
+    type: 'unary',
+    operator,
+    right,
+  };
+}
+
+export type ExprMatcher<R> = {
+  binary: (expr: BinaryExpr) => R;
+  grouping: (expr: GroupingExpr) => R;
+  literal: (expr: LiteralExpr) => R;
+  unary: (expr: UnaryExpr) => R;
+};
+
+export function matchExpr<R>(expr: Expr, matcher: ExprMatcher<R>): R {
+  switch (expr.type) {
+    case 'binary':
+      return matcher.binary(expr as BinaryExpr);
+    case 'grouping':
+      return matcher.grouping(expr as GroupingExpr);
+    case 'literal':
+      return matcher.literal(expr as LiteralExpr);
+    case 'unary':
+      return matcher.unary(expr as UnaryExpr);
   }
 }
