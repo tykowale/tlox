@@ -11,28 +11,9 @@ class PrintWriter {
     this.file = fs.createWriteStream(fileName, options);
   }
 
-  write(str) {
-    this.file.write(str);
-  }
-
   writeln(str = '') {
     this.file.write(str + '\n');
   }
-
-  format(format, ...args) {
-    this.file.write(util.format(format, ...args));
-  }
-
-  formatln(format, ...args) {
-    this.file.write(util.format(format, ...args) + '\n');
-  }
-
-  flush() {
-    if (typeof this.file.flush === 'function') {
-      this.file.flush();
-    }
-  }
-
   close() {
     this.file.close();
   }
