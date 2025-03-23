@@ -3,10 +3,12 @@ import readline from 'readline';
 import { Scanner } from 'src/Scanner';
 import { Token } from 'src/Token';
 import { Parser } from 'src/Parser';
-import { printAst } from 'src/AstPrinter';
+import { RuntimeError } from 'src/Errors';
+import { interpret } from 'src/Interpreter';
 
 export class Lox {
   protected static hadError: boolean = false;
+  protected static hadRuntimeError: boolean = false;
 
   public static runFile(path: string): void {
     try {
@@ -15,6 +17,10 @@ export class Lox {
 
       if (Lox.hadError) {
         process.exit(65);
+      }
+
+      if (Lox.hadRuntimeError) {
+        process.exit(70);
       }
     } catch (e) {
       const err = e as Error;
@@ -53,7 +59,7 @@ export class Lox {
       return;
     }
 
-    console.log(printAst(expr));
+    interpret(expr);
   }
 
   public static error(line: number, message: string): void {
@@ -66,6 +72,11 @@ export class Lox {
     } else {
       Lox.report(token.line, ` at '${token.lexeme}'`, message);
     }
+  }
+
+  public static runtimeError(error: RuntimeError): void {
+    console.error(`${error.message}\n[line ${error.token.line}]`);
+    Lox.hadRuntimeError = true;
   }
 
   protected static report(line: number, where: string, message: string): void {
