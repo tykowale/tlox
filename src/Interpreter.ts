@@ -6,7 +6,7 @@ import { StmtMatcher, Stmt, matchStmt } from 'src/Stmt';
 export function interpret(statements: Stmt[]): void {
   try {
     for (const stmt of statements) {
-      matchStmt(stmt, stmtInterpreter);
+      executeStmt(stmt);
     }
   } catch (error) {
     if (error instanceof RuntimeError) {
@@ -15,86 +15,120 @@ export function interpret(statements: Stmt[]): void {
   }
 }
 
-function evaluate(expr: Expr): unknown {
+function isExpr(node: Expr | Stmt): node is Expr {
+  return ['binary', 'grouping', 'literal', 'unary'].includes(node.type);
+}
+
+export function evaluate(node: Expr | Stmt): unknown {
+  if (isExpr(node)) {
+    return evaluateExpr(node);
+  } else {
+    return executeStmt(node);
+  }
+}
+
+function evaluateExpr(expr: Expr): unknown {
   return matchExpr(expr, exprInterpreter);
 }
 
+function executeStmt(stmt: Stmt): unknown {
+  return matchStmt(stmt, stmtInterpreter);
+}
+
+function literalExpr(expr: Expr & { type: 'literal' }): unknown {
+  return expr.value;
+}
+
+function groupingExpr(expr: Expr & { type: 'grouping' }): unknown {
+  return evaluateExpr(expr.expression);
+}
+
+function unaryExpr(expr: Expr & { type: 'unary' }): unknown {
+  const right = evaluateExpr(expr.right);
+
+  switch (expr.operator.type) {
+    case 'MINUS':
+      checkNumberOperand(expr.operator, right);
+      return -right;
+    case 'BANG':
+      return !isTruthy(right);
+  }
+
+  // unreachable
+  throw new Error(`Unexpected unary operator: ${expr.operator.type}`);
+}
+
+function binaryExpr(expr: Expr & { type: 'binary' }): unknown {
+  const left = evaluateExpr(expr.left);
+  const right = evaluateExpr(expr.right);
+
+  switch (expr.operator.type) {
+    case 'MINUS':
+      checkNumberOperand(expr.operator, left);
+      checkNumberOperand(expr.operator, right);
+      return left - right;
+    case 'PLUS':
+      if (typeof left === 'number' && typeof right === 'number') {
+        return left + right;
+      }
+
+      if (typeof left === 'string' && typeof right === 'string') {
+        return left + right;
+      }
+
+      throw new RuntimeError(expr.operator, 'Operands must be two numbers or two strings.');
+    case 'SLASH':
+      checkNumberOperand(expr.operator, left);
+      checkNumberOperand(expr.operator, right);
+      return left / right;
+    case 'STAR':
+      checkNumberOperand(expr.operator, left);
+      checkNumberOperand(expr.operator, right);
+      return left * right;
+    case 'GREATER':
+      checkNumberOperand(expr.operator, left);
+      checkNumberOperand(expr.operator, right);
+      return left > right;
+    case 'GREATER_EQUAL':
+      checkNumberOperand(expr.operator, left);
+      checkNumberOperand(expr.operator, right);
+      return left >= right;
+    case 'LESS':
+      checkNumberOperand(expr.operator, left);
+      checkNumberOperand(expr.operator, right);
+      return left < right;
+    case 'LESS_EQUAL':
+      checkNumberOperand(expr.operator, left);
+      checkNumberOperand(expr.operator, right);
+      return left <= right;
+    case 'BANG_EQUAL':
+      return left !== right;
+    case 'EQUAL_EQUAL':
+      return left === right;
+  }
+
+  // unreachable
+  throw new Error(`Unexpected binary operator: ${expr.operator.type}`);
+}
+
+function executeExpressionStmt(stmt: Stmt & { type: 'expression' }): unknown {
+  return evaluateExpr(stmt.expression);
+}
+
+function executePrintStmt(stmt: Stmt & { type: 'print' }): unknown {
+  const value = evaluateExpr(stmt.expression);
+  console.log(value);
+  return null;
+}
+
 const exprInterpreter: ExprMatcher<unknown> = {
-  literal: expr => expr.value,
-  grouping: expr => evaluate(expr.expression),
-  unary: expr => {
-    const right = evaluate(expr.right);
-
-    switch (expr.operator.type) {
-      case 'MINUS':
-        checkNumberOperand(expr.operator, right);
-        return -right;
-      case 'BANG':
-        return !isTruthy(right);
-    }
-
-    // unreachable
-    return null;
-  },
-  binary: expr => {
-    const left = evaluate(expr.left);
-    const right = evaluate(expr.right);
-
-    switch (expr.operator.type) {
-      case 'MINUS':
-        checkNumberOperand(expr.operator, left);
-        checkNumberOperand(expr.operator, right);
-        return left - right;
-      case 'PLUS':
-        if (typeof left === 'number' && typeof right === 'number') {
-          return left + right;
-        }
-
-        if (typeof left === 'string' && typeof right === 'string') {
-          return left + right;
-        }
-        break;
-      case 'SLASH':
-        checkNumberOperand(expr.operator, left);
-        checkNumberOperand(expr.operator, right);
-        return (left as number) / (right as number);
-      case 'STAR':
-        checkNumberOperand(expr.operator, left);
-        checkNumberOperand(expr.operator, right);
-        return (left as number) * (right as number);
-      case 'GREATER':
-        checkNumberOperand(expr.operator, left);
-        checkNumberOperand(expr.operator, right);
-        return (left as number) > (right as number);
-      case 'GREATER_EQUAL':
-        checkNumberOperand(expr.operator, left);
-        checkNumberOperand(expr.operator, right);
-        return (left as number) >= (right as number);
-      case 'LESS':
-        checkNumberOperand(expr.operator, left);
-        checkNumberOperand(expr.operator, right);
-        return (left as number) < (right as number);
-      case 'LESS_EQUAL':
-        checkNumberOperand(expr.operator, left);
-        checkNumberOperand(expr.operator, right);
-        return (left as number) <= (right as number);
-      case 'BANG_EQUAL':
-        return left !== right;
-      case 'EQUAL_EQUAL':
-        return left === right;
-    }
-
-    // unreachable
-    return null;
-  },
+  literal: literalExpr,
+  grouping: groupingExpr,
+  unary: unaryExpr,
+  binary: binaryExpr,
 };
 
 const stmtInterpreter: StmtMatcher<unknown> = {
-  expression: stmt => {
-    return evaluate(stmt.expression);
-  },
-  print: stmt => {
-    const value = evaluate(stmt.expression);
-    console.log(value);
-  },
+  expression: executeExpressionStmt,
+  print: executePrintStmt,
 };
