@@ -57,10 +57,10 @@ export function createUnary(operator: Token, right: Expr): UnaryExpr {
 }
 
 export type ExprMatcher<R> = {
-  binary: (expr: BinaryExpr) => R;
-  grouping: (expr: GroupingExpr) => R;
-  literal: (expr: LiteralExpr) => R;
-  unary: (expr: UnaryExpr) => R;
+  binary: (b: BinaryExpr) => R;
+  grouping: (g: GroupingExpr) => R;
+  literal: (l: LiteralExpr) => R;
+  unary: (u: UnaryExpr) => R;
 };
 
 export function matchExpr<R>(expr: Expr, matcher: ExprMatcher<R>): R {

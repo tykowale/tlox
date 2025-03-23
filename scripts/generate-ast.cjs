@@ -3,7 +3,7 @@ const fs = require('fs');
 const PrintWriter = require('./PrintWriter.cjs');
 
 /**
- * Generates the Expr.ts file in the src directory.
+ * Generates the Expr.ts and Stmt.ts files in the src directory.
  * 
  * Usage: node scripts/generate-ast.cjs
  */
@@ -36,18 +36,29 @@ const exprDefinitions = [
   },
 ];
 
+const stmtDefinitions = [
+  {
+    className: 'Expression',
+    args: [{ type: 'Expr', name: 'expression' }],
+  },
+  {
+    className: 'Print',
+    args: [{ type: 'Expr', name: 'expression' }],
+  },
+];
+
 //------------------------------------------------------------------------------
 // Code Generation Functions
 //------------------------------------------------------------------------------
-function defineUnionType(writer) {
-  writer.writeln(`export type Expr = ${exprDefinitions
-    .map(def => `${def.className}Expr`)
+function defineUnionType(writer, baseName, definitions) {
+  writer.writeln(`export type ${baseName} = ${definitions
+    .map(def => `${def.className}${baseName}`)
     .join(' | ')};`);
   writer.writeln('');
 }
 
-function defineInterface(writer, className, fieldList) {
-  writer.writeln(`export interface ${className}Expr {`);
+function defineInterface(writer, baseName, className, fieldList) {
+  writer.writeln(`export interface ${className}${baseName} {`);
   writer.writeln(`  type: '${className.toLowerCase()}';`);
   
   for (const field of fieldList) {
@@ -58,12 +69,12 @@ function defineInterface(writer, className, fieldList) {
   writer.writeln('');
 }
 
-function defineFactory(writer, className, fieldList) {
+function defineFactory(writer, baseName, className, fieldList) {
   const params = fieldList
     .map(field => `${field.name}: ${field.type}`)
     .join(', ');
   
-  writer.writeln(`export function create${className}(${params}): ${className}Expr {`);
+  writer.writeln(`export function create${className}(${params}): ${className}${baseName} {`);
   writer.writeln('  return {');
   writer.writeln(`    type: '${className.toLowerCase()}',`);
   
@@ -76,52 +87,57 @@ function defineFactory(writer, className, fieldList) {
   writer.writeln('');
 }
 
-function defineMatcher(writer) {
-  writer.writeln('export type ExprMatcher<R> = {');
+function defineMatcher(writer, baseName, definitions) {
+  writer.writeln(`export type ${baseName}Matcher<R> = {`);
   
-  for (const expr of exprDefinitions) {
-    const typeName = expr.className.toLowerCase();
-    writer.writeln(`  ${typeName}: (expr: ${expr.className}Expr) => R;`);
+  for (const def of definitions) {
+    const typeName = def.className.toLowerCase();
+    writer.writeln(`  ${typeName}: (${typeName.charAt(0)}: ${def.className}${baseName}) => R;`);
   }
   
   writer.writeln('};');
   writer.writeln('');
 }
 
-function defineMatchFunction(writer) {
-  writer.writeln('export function matchExpr<R>(expr: Expr, matcher: ExprMatcher<R>): R {');
-  writer.writeln('  switch (expr.type) {');
+function defineMatchFunction(writer, baseName, definitions) {
+  writer.writeln(`export function match${baseName}<R>(${baseName.toLowerCase()}: ${baseName}, matcher: ${baseName}Matcher<R>): R {`);
+  writer.writeln(`  switch (${baseName.toLowerCase()}.type) {`);
   
-  for (const expr of exprDefinitions) {
-    const typeName = expr.className.toLowerCase();
+  for (const def of definitions) {
+    const typeName = def.className.toLowerCase();
     writer.writeln(`    case '${typeName}':`);
-    writer.writeln(`      return matcher.${typeName}(expr as ${expr.className}Expr);`);
+    writer.writeln(`      return matcher.${typeName}(${baseName.toLowerCase()} as ${def.className}${baseName});`);
   }
   
   writer.writeln('  }');
   writer.writeln('}');
 }
 
-function generateAst() {
-  const outputPath = path.join(__dirname, '..', 'src', 'Expr.ts');
+function generateAst(outputDir, baseName, definitions) {
+  const outputPath = path.join(outputDir, `${baseName}.ts`);
   const writer = new PrintWriter(outputPath);
 
-  writer.writeln(`import { Token } from 'src/Token';`);
+  // Write imports
+  if (baseName === 'Stmt') {
+    writer.writeln(`import { Expr } from 'src/Expr';`);
+  } else {
+    writer.writeln(`import { Token } from 'src/Token';`);
+  }
   writer.writeln('');
 
-  defineUnionType(writer);
+  defineUnionType(writer, baseName, definitions);
   
-  for (const expr of exprDefinitions) {
-    defineInterface(writer, expr.className, expr.args);
+  for (const def of definitions) {
+    defineInterface(writer, baseName, def.className, def.args);
   }
   
-  for (const expr of exprDefinitions) {
-    defineFactory(writer, expr.className, expr.args);
+  for (const def of definitions) {
+    defineFactory(writer, baseName, def.className, def.args);
   }
   
-  defineMatcher(writer);
+  defineMatcher(writer, baseName, definitions);
   
-  defineMatchFunction(writer);
+  defineMatchFunction(writer, baseName, definitions);
   
   writer.close();
   console.log(`Generated ${outputPath}`);
@@ -130,4 +146,6 @@ function generateAst() {
 //------------------------------------------------------------------------------
 // Main Execution
 //------------------------------------------------------------------------------
-generateAst();
+const outputDir = path.join(__dirname, '..', 'src');
+generateAst(outputDir, 'Expr', exprDefinitions);
+generateAst(outputDir, 'Stmt', stmtDefinitions);
