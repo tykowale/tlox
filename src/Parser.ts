@@ -3,22 +3,30 @@ import { Expr, createBinary, createGrouping, createLiteral, createUnary } from '
 import { TokenType } from 'src/TokenType';
 import { Lox } from 'src/index';
 import { ParseError } from 'src/Errors';
+import { createExpression, createPrint, Stmt } from 'src/Stmt';
 
 export class Parser {
   private current = 0;
 
   constructor(private tokens: Token[]) {}
 
-  public parse(): Expr | null {
-    try {
-      return this.expression();
-    } catch (error) {
-      if (error instanceof ParseError) {
-        return null;
-      }
+  public parse(): Stmt[] {
+    const statements = [];
 
-      throw error;
+    while (!this.isAtEnd()) {
+      statements.push(this.statement());
     }
+
+    return statements;
+  }
+
+  // statement → exprStmt | printStmt ;
+  private statement(): Stmt {
+    if (this.match('PRINT')) {
+      return this.printStatement();
+    }
+
+    return this.expressionStatement();
   }
 
   // expression → equality ;
@@ -171,6 +179,20 @@ export class Parser {
 
   private previous(): Token {
     return this.tokens[this.current - 1];
+  }
+
+  private printStatement(): Stmt {
+    const value = this.expression();
+    this.consume('SEMICOLON', 'Expect ";" after value.');
+
+    return createPrint(value);
+  }
+
+  private expressionStatement(): Stmt {
+    const expr = this.expression();
+    this.consume('SEMICOLON', 'Expect ";" after expression.');
+
+    return createExpression(expr);
   }
 
   private synchronize(): void {

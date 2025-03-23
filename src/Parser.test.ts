@@ -2,44 +2,52 @@ import { Parser } from 'src/Parser';
 import { Scanner } from 'src/Scanner';
 import { Expr, BinaryExpr, GroupingExpr, LiteralExpr, UnaryExpr } from 'src/Expr';
 import { printAst } from 'src/AstPrinter';
+import { ExpressionStmt } from 'src/Stmt';
 
 function parseExpression(source: string): Expr {
   const scanner = new Scanner(source);
   const tokens = scanner.scanTokens();
   const parser = new Parser(tokens);
-  const result = parser.parse();
-  if (result === null) {
-    throw new Error('Failed to parse expression');
+  const statements = parser.parse();
+
+  if (statements.length !== 1) {
+    throw new Error('Expected a single expression statement');
   }
-  return result;
+
+  const stmt = statements[0];
+  if (stmt.type !== 'expression') {
+    throw new Error('Expected an expression statement');
+  }
+
+  return (stmt as ExpressionStmt).expression;
 }
 
 describe('Parser', () => {
   describe('literal expressions', () => {
     it('parses number literals', () => {
-      const expr = parseExpression('42');
+      const expr = parseExpression('42;');
       expect(expr.type).toBe('literal');
       expect((expr as LiteralExpr).value).toBe(42);
     });
 
     it('parses string literals', () => {
-      const expr = parseExpression('"hello"');
+      const expr = parseExpression('"hello";');
       expect(expr.type).toBe('literal');
       expect((expr as LiteralExpr).value).toBe('hello');
     });
 
     it('parses boolean literals', () => {
-      const trueExpr = parseExpression('true');
+      const trueExpr = parseExpression('true;');
       expect(trueExpr.type).toBe('literal');
       expect((trueExpr as LiteralExpr).value).toBe(true);
 
-      const falseExpr = parseExpression('false');
+      const falseExpr = parseExpression('false;');
       expect(falseExpr.type).toBe('literal');
       expect((falseExpr as LiteralExpr).value).toBe(false);
     });
 
     it('parses nil literal', () => {
-      const expr = parseExpression('nil');
+      const expr = parseExpression('nil;');
       expect(expr.type).toBe('literal');
       expect((expr as LiteralExpr).value).toBe(null);
     });
@@ -47,7 +55,7 @@ describe('Parser', () => {
 
   describe('grouping expressions', () => {
     it('parses parenthesized expressions', () => {
-      const expr = parseExpression('(42)');
+      const expr = parseExpression('(42);');
       expect(expr.type).toBe('grouping');
 
       const innerExpr = (expr as GroupingExpr).expression;
@@ -56,7 +64,7 @@ describe('Parser', () => {
     });
 
     it('parses nested parenthesized expressions', () => {
-      const expr = parseExpression('((42))');
+      const expr = parseExpression('((42));');
       expect(expr.type).toBe('grouping');
 
       const innerExpr = (expr as GroupingExpr).expression;
@@ -70,7 +78,7 @@ describe('Parser', () => {
 
   describe('unary expressions', () => {
     it('parses negation expressions', () => {
-      const expr = parseExpression('-42');
+      const expr = parseExpression('-42;');
       expect(expr.type).toBe('unary');
 
       const unaryExpr = expr as UnaryExpr;
@@ -80,7 +88,7 @@ describe('Parser', () => {
     });
 
     it('parses not expressions', () => {
-      const expr = parseExpression('!true');
+      const expr = parseExpression('!true;');
       expect(expr.type).toBe('unary');
 
       const unaryExpr = expr as UnaryExpr;
@@ -90,7 +98,7 @@ describe('Parser', () => {
     });
 
     it('parses chained unary expressions', () => {
-      const expr = parseExpression('!!true');
+      const expr = parseExpression('!!true;');
       expect(expr.type).toBe('unary');
 
       const outerUnary = expr as UnaryExpr;
@@ -108,7 +116,7 @@ describe('Parser', () => {
 
   describe('binary expressions', () => {
     it('parses addition expressions', () => {
-      const expr = parseExpression('1 + 2');
+      const expr = parseExpression('1 + 2;');
       expect(expr.type).toBe('binary');
 
       const binaryExpr = expr as BinaryExpr;
@@ -120,7 +128,7 @@ describe('Parser', () => {
     });
 
     it('parses subtraction expressions', () => {
-      const expr = parseExpression('5 - 3');
+      const expr = parseExpression('5 - 3;');
       expect(expr.type).toBe('binary');
 
       const binaryExpr = expr as BinaryExpr;
@@ -130,7 +138,7 @@ describe('Parser', () => {
     });
 
     it('parses multiplication expressions', () => {
-      const expr = parseExpression('2 * 3');
+      const expr = parseExpression('2 * 3;');
       expect(expr.type).toBe('binary');
 
       const binaryExpr = expr as BinaryExpr;
@@ -140,7 +148,7 @@ describe('Parser', () => {
     });
 
     it('parses division expressions', () => {
-      const expr = parseExpression('10 / 2');
+      const expr = parseExpression('10 / 2;');
       expect(expr.type).toBe('binary');
 
       const binaryExpr = expr as BinaryExpr;
@@ -150,7 +158,7 @@ describe('Parser', () => {
     });
 
     it('parses comparison expressions', () => {
-      const expr = parseExpression('3 > 2');
+      const expr = parseExpression('3 > 2;');
       expect(expr.type).toBe('binary');
 
       const binaryExpr = expr as BinaryExpr;
@@ -160,7 +168,7 @@ describe('Parser', () => {
     });
 
     it('parses equality expressions', () => {
-      const expr = parseExpression('1 == 1');
+      const expr = parseExpression('1 == 1;');
       expect(expr.type).toBe('binary');
 
       const binaryExpr = expr as BinaryExpr;
@@ -172,7 +180,7 @@ describe('Parser', () => {
 
   describe('operator precedence', () => {
     it('respects multiplication precedence over addition', () => {
-      const expr = parseExpression('1 + 2 * 3');
+      const expr = parseExpression('1 + 2 * 3;');
 
       const binaryExpr = expr as BinaryExpr;
       expect(binaryExpr.operator.lexeme).toBe('+');
@@ -186,7 +194,7 @@ describe('Parser', () => {
     });
 
     it('respects parentheses over operator precedence', () => {
-      const expr = parseExpression('(1 + 2) * 3');
+      const expr = parseExpression('(1 + 2) * 3;');
 
       const binaryExpr = expr as BinaryExpr;
       expect(binaryExpr.operator.lexeme).toBe('*');
@@ -203,7 +211,7 @@ describe('Parser', () => {
     });
 
     it('respects comparison precedence over equality', () => {
-      const expr = parseExpression('1 == 2 < 3');
+      const expr = parseExpression('1 == 2 < 3;');
 
       const binaryExpr = expr as BinaryExpr;
       expect(binaryExpr.operator.lexeme).toBe('==');
@@ -219,14 +227,14 @@ describe('Parser', () => {
 
   describe('complex expressions', () => {
     it('parses complex mathematical expressions', () => {
-      const expr = parseExpression('1 + 2 * 3 - 4 / -2');
+      const expr = parseExpression('1 + 2 * 3 - 4 / -2;');
 
       const ast = printAst(expr);
       expect(ast).toBe('(- (+ 1 (* 2 3)) (/ 4 (- 2)))');
     });
 
     it('parses complex logical expressions', () => {
-      const expr = parseExpression('!(true == false) != (5 >= 4)');
+      const expr = parseExpression('!(true == false) != (5 >= 4);');
 
       const ast = printAst(expr);
       expect(ast).toBe('(!= (! (group (== true false))) (group (>= 5 4)))');

@@ -1,12 +1,13 @@
 import { Expr, ExprMatcher, matchExpr } from 'src/Expr';
 import { RuntimeError } from 'src/Errors';
 import { isTruthy, checkNumberOperand } from 'src/RuntimeChecks';
+import { StmtMatcher, Stmt, matchStmt } from 'src/Stmt';
 
-export function interpret(expr: Expr): unknown {
+export function interpret(statements: Stmt[]): void {
   try {
-    const value = matchExpr(expr, interpreter);
-    console.log(value);
-    return value;
+    for (const stmt of statements) {
+      matchStmt(stmt, stmtInterpreter);
+    }
   } catch (error) {
     if (error instanceof RuntimeError) {
       console.error(error.message);
@@ -15,10 +16,10 @@ export function interpret(expr: Expr): unknown {
 }
 
 function evaluate(expr: Expr): unknown {
-  return matchExpr(expr, interpreter);
+  return matchExpr(expr, exprInterpreter);
 }
 
-const interpreter: ExprMatcher<unknown> = {
+const exprInterpreter: ExprMatcher<unknown> = {
   literal: expr => expr.value,
   grouping: expr => evaluate(expr.expression),
   unary: expr => {
@@ -85,5 +86,15 @@ const interpreter: ExprMatcher<unknown> = {
 
     // unreachable
     return null;
+  },
+};
+
+const stmtInterpreter: StmtMatcher<unknown> = {
+  expression: stmt => {
+    return evaluate(stmt.expression);
+  },
+  print: stmt => {
+    const value = evaluate(stmt.expression);
+    console.log(value);
   },
 };
