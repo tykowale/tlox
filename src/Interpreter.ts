@@ -1,6 +1,6 @@
 import { Expr, ExprMatcher, matchExpr } from 'src/Expr';
 import { RuntimeError } from 'src/Errors';
-import { Token } from 'src/Token';
+import { isTruthy, checkNumberOperand } from 'src/RuntimeChecks';
 
 export function interpret(expr: Expr): unknown {
   try {
@@ -16,27 +16,6 @@ export function interpret(expr: Expr): unknown {
 
 function evaluate(expr: Expr): unknown {
   return matchExpr(expr, interpreter);
-}
-
-// false and null/undefined are falsy, everything else is truthy
-function isTruthy(obj: unknown): boolean {
-  if (obj == null) {
-    return false;
-  }
-
-  if (typeof obj === 'boolean') {
-    return obj;
-  }
-
-  return true;
-}
-
-function checkNumberOperand(operator: Token, operand: unknown): asserts operand is number {
-  if (typeof operand === 'number') {
-    return;
-  }
-
-  throw new RuntimeError(operator, 'Operand must be a number.');
 }
 
 const interpreter: ExprMatcher<unknown> = {
