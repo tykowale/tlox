@@ -1,6 +1,6 @@
 import { Token } from 'src/Token';
 
-export type Expr = BinaryExpr | GroupingExpr | LiteralExpr | UnaryExpr;
+export type Expr = BinaryExpr | GroupingExpr | LiteralExpr | UnaryExpr | VariableExpr;
 
 export interface BinaryExpr {
   type: 'binary';
@@ -23,6 +23,11 @@ export interface UnaryExpr {
   type: 'unary';
   operator: Token;
   right: Expr;
+}
+
+export interface VariableExpr {
+  type: 'variable';
+  name: Token;
 }
 
 export function createBinary(left: Expr, operator: Token, right: Expr): BinaryExpr {
@@ -56,11 +61,19 @@ export function createUnary(operator: Token, right: Expr): UnaryExpr {
   };
 }
 
+export function createVariable(name: Token): VariableExpr {
+  return {
+    type: 'variable',
+    name,
+  };
+}
+
 export type ExprMatcher<R> = {
   binary: (b: BinaryExpr) => R;
   grouping: (g: GroupingExpr) => R;
   literal: (l: LiteralExpr) => R;
   unary: (u: UnaryExpr) => R;
+  variable: (v: VariableExpr) => R;
 };
 
 export function matchExpr<R>(expr: Expr, matcher: ExprMatcher<R>): R {
@@ -73,5 +86,7 @@ export function matchExpr<R>(expr: Expr, matcher: ExprMatcher<R>): R {
       return matcher.literal(expr as LiteralExpr);
     case 'unary':
       return matcher.unary(expr as UnaryExpr);
+    case 'variable':
+      return matcher.variable(expr as VariableExpr);
   }
 }
