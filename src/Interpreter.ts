@@ -2,6 +2,9 @@ import { Expr, ExprMatcher, matchExpr } from 'src/Expr';
 import { RuntimeError } from 'src/Errors';
 import { isTruthy, checkNumberOperand } from 'src/RuntimeChecks';
 import { StmtMatcher, Stmt, matchStmt } from 'src/Stmt';
+import { Environment } from 'src/Environment';
+
+const environment = new Environment();
 
 export function interpret(statements: Stmt[]): void {
   try {
@@ -111,6 +114,10 @@ function binaryExpr(expr: Expr & { type: 'binary' }): unknown {
   throw new Error(`Unexpected binary operator: ${expr.operator.type}`);
 }
 
+function variableExpr(expr: Expr & { type: 'variable' }): unknown {
+  return environment.get(expr.name);
+}
+
 function executeExpressionStmt(stmt: Stmt & { type: 'expression' }): unknown {
   return evaluateExpr(stmt.expression);
 }
@@ -121,14 +128,27 @@ function executePrintStmt(stmt: Stmt & { type: 'print' }): unknown {
   return null;
 }
 
+function executeVarStmt(stmt: Stmt & { type: 'var' }): unknown {
+  let value = null;
+
+  if (stmt.initializer != null) {
+    value = evaluateExpr(stmt.initializer);
+  }
+
+  environment.define(stmt.name.lexeme, value);
+  return null;
+}
+
 const exprInterpreter: ExprMatcher<unknown> = {
   literal: literalExpr,
   grouping: groupingExpr,
   unary: unaryExpr,
   binary: binaryExpr,
+  variable: variableExpr,
 };
 
 const stmtInterpreter: StmtMatcher<unknown> = {
   expression: executeExpressionStmt,
   print: executePrintStmt,
+  var: executeVarStmt,
 };

@@ -1,9 +1,9 @@
 import { Token } from 'src/Token';
-import { Expr, createBinary, createGrouping, createLiteral, createUnary } from 'src/Expr';
+import { Expr, createBinary, createGrouping, createLiteral, createUnary, createVariable } from 'src/Expr';
 import { TokenType } from 'src/TokenType';
 import { Lox } from 'src/index';
 import { ParseError } from 'src/Errors';
-import { createExpression, createPrint, Stmt } from 'src/Stmt';
+import { createExpression, createPrint, createVar, Stmt } from 'src/Stmt';
 
 export class Parser {
   private current = 0;
@@ -14,10 +14,46 @@ export class Parser {
     const statements = [];
 
     while (!this.isAtEnd()) {
-      statements.push(this.statement());
+      const stmt = this.declaration();
+
+      if (stmt != null) {
+        statements.push(stmt);
+      }
     }
 
     return statements;
+  }
+
+  // declaration → varDecl | statement ;
+  private declaration(): Stmt | null {
+    try {
+      if (this.match('VAR')) {
+        return this.varDeclaration();
+      }
+
+      return this.statement();
+    } catch (error) {
+      if (error instanceof ParseError) {
+        this.synchronize();
+        return null;
+      }
+
+      throw error;
+    }
+  }
+
+  // varDecl → "var" IDENTIFIER ( "=" expression )? ";" ;
+  private varDeclaration(): Stmt {
+    const name = this.consume('IDENTIFIER', 'Expect variable name.');
+
+    let initializer: Expr | null = null;
+
+    if (this.match('EQUAL')) {
+      initializer = this.expression();
+    }
+
+    this.consume('SEMICOLON', 'Expect ";" after variable declaration.');
+    return createVar(name, initializer);
   }
 
   // statement → exprStmt | printStmt ;
@@ -117,6 +153,10 @@ export class Parser {
     }
     if (this.match('NUMBER', 'STRING')) {
       return createLiteral(this.previous().literal);
+    }
+
+    if (this.match('IDENTIFIER')) {
+      return createVariable(this.previous());
     }
 
     if (this.match('LEFT_PAREN')) {

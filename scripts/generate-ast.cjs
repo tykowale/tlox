@@ -53,7 +53,7 @@ const stmtDefinitions = [
     className: 'Var',
     args: [
       { type: 'Token', name: 'name' },
-      { type: 'Expr', name: 'initializer' },
+      { type: 'Expr | null', name: 'initializer' },
     ],
   },
 ];
@@ -75,7 +75,8 @@ function defineInterface(writer, baseName, className, fieldList) {
   writer.writeln(`  type: '${className.toLowerCase()}';`);
 
   for (const field of fieldList) {
-    writer.writeln(`  ${field.name}: ${field.type};`);
+    const optionalMarker = field.optional ? '?' : '';
+    writer.writeln(`  ${field.name}${optionalMarker}: ${field.type};`);
   }
 
   writer.writeln('}');
@@ -83,7 +84,13 @@ function defineInterface(writer, baseName, className, fieldList) {
 }
 
 function defineFactory(writer, baseName, className, fieldList) {
-  const params = fieldList.map(field => `${field.name}: ${field.type}`).join(', ');
+  // Prepare parameters list
+  const params = fieldList
+    .map(field => {
+      const optionalMarker = field.optional ? '?' : '';
+      return `${field.name}${optionalMarker}: ${field.type}`;
+    })
+    .join(', ');
 
   writer.writeln(`export function create${className}(${params}): ${className}${baseName} {`);
   writer.writeln('  return {');

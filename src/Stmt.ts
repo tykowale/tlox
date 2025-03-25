@@ -16,7 +16,7 @@ export interface PrintStmt {
 export interface VarStmt {
   type: 'var';
   name: Token;
-  initializer: Expr;
+  initializer: Expr | null;
 }
 
 export function createExpression(expression: Expr): ExpressionStmt {
@@ -33,7 +33,7 @@ export function createPrint(expression: Expr): PrintStmt {
   };
 }
 
-export function createVar(name: Token, initializer: Expr): VarStmt {
+export function createVar(name: Token, initializer: Expr | null): VarStmt {
   return {
     type: 'var',
     name,
