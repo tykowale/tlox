@@ -1,5 +1,13 @@
 import { Token } from 'src/Token';
-import { Expr, createBinary, createGrouping, createLiteral, createUnary, createVariable } from 'src/Expr';
+import {
+  Expr,
+  createAssign,
+  createBinary,
+  createGrouping,
+  createLiteral,
+  createUnary,
+  createVariable,
+} from 'src/Expr';
 import { TokenType } from 'src/TokenType';
 import { Lox } from 'src/index';
 import { ParseError } from 'src/Errors';
@@ -65,9 +73,28 @@ export class Parser {
     return this.expressionStatement();
   }
 
-  // expression → equality ;
+  // expression → assignment ;
   private expression(): Expr {
-    return this.equality();
+    return this.assignment();
+  }
+
+  // assignment → IDENTIFIER "=" assignment | equality ;
+  private assignment(): Expr {
+    const expr = this.equality();
+
+    if (this.match('EQUAL')) {
+      const equals = this.previous();
+      const value = this.assignment();
+
+      if (expr.type === 'variable') {
+        const name = expr.name;
+        return createAssign(name, value);
+      }
+
+      throw this.error(equals, 'Invalid assignment target.');
+    }
+
+    return expr;
   }
 
   //equality → comparison ( ( "!=" | "==" ) comparison )* ;

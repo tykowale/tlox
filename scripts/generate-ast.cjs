@@ -12,6 +12,13 @@ const PrintWriter = require('./PrintWriter.cjs');
 //------------------------------------------------------------------------------
 const exprDefinitions = [
   {
+    className: 'Assign',
+    args: [
+      { type: 'Token', name: 'name' },
+      { type: 'Expr', name: 'value' },
+    ],
+  },
+  {
     className: 'Binary',
     args: [
       { type: 'Expr', name: 'left' },

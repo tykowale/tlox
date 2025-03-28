@@ -1,6 +1,12 @@
 import { Token } from 'src/Token';
 
-export type Expr = BinaryExpr | GroupingExpr | LiteralExpr | UnaryExpr | VariableExpr;
+export type Expr = AssignExpr | BinaryExpr | GroupingExpr | LiteralExpr | UnaryExpr | VariableExpr;
+
+export interface AssignExpr {
+  type: 'assign';
+  name: Token;
+  value: Expr;
+}
 
 export interface BinaryExpr {
   type: 'binary';
@@ -28,6 +34,14 @@ export interface UnaryExpr {
 export interface VariableExpr {
   type: 'variable';
   name: Token;
+}
+
+export function createAssign(name: Token, value: Expr): AssignExpr {
+  return {
+    type: 'assign',
+    name,
+    value,
+  };
 }
 
 export function createBinary(left: Expr, operator: Token, right: Expr): BinaryExpr {
@@ -69,6 +83,7 @@ export function createVariable(name: Token): VariableExpr {
 }
 
 export type ExprMatcher<R> = {
+  assign: (a: AssignExpr) => R;
   binary: (b: BinaryExpr) => R;
   grouping: (g: GroupingExpr) => R;
   literal: (l: LiteralExpr) => R;
@@ -78,6 +93,8 @@ export type ExprMatcher<R> = {
 
 export function matchExpr<R>(expr: Expr, matcher: ExprMatcher<R>): R {
   switch (expr.type) {
+    case 'assign':
+      return matcher.assign(expr as AssignExpr);
     case 'binary':
       return matcher.binary(expr as BinaryExpr);
     case 'grouping':

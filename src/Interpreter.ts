@@ -1,4 +1,14 @@
-import { Expr, ExprMatcher, matchExpr } from 'src/Expr';
+import {
+  AssignExpr,
+  BinaryExpr,
+  Expr,
+  ExprMatcher,
+  GroupingExpr,
+  LiteralExpr,
+  UnaryExpr,
+  VariableExpr,
+  matchExpr,
+} from 'src/Expr';
 import { RuntimeError } from 'src/Errors';
 import { isTruthy, checkNumberOperand } from 'src/RuntimeChecks';
 import { StmtMatcher, Stmt, matchStmt } from 'src/Stmt';
@@ -38,15 +48,15 @@ function executeStmt(stmt: Stmt): unknown {
   return matchStmt(stmt, stmtInterpreter);
 }
 
-function literalExpr(expr: Expr & { type: 'literal' }): unknown {
+function literalExpr(expr: LiteralExpr): unknown {
   return expr.value;
 }
 
-function groupingExpr(expr: Expr & { type: 'grouping' }): unknown {
+function groupingExpr(expr: GroupingExpr): unknown {
   return evaluateExpr(expr.expression);
 }
 
-function unaryExpr(expr: Expr & { type: 'unary' }): unknown {
+function unaryExpr(expr: UnaryExpr): unknown {
   const right = evaluateExpr(expr.right);
 
   switch (expr.operator.type) {
@@ -61,7 +71,7 @@ function unaryExpr(expr: Expr & { type: 'unary' }): unknown {
   throw new Error(`Unexpected unary operator: ${expr.operator.type}`);
 }
 
-function binaryExpr(expr: Expr & { type: 'binary' }): unknown {
+function binaryExpr(expr: BinaryExpr): unknown {
   const left = evaluateExpr(expr.left);
   const right = evaluateExpr(expr.right);
 
@@ -114,8 +124,14 @@ function binaryExpr(expr: Expr & { type: 'binary' }): unknown {
   throw new Error(`Unexpected binary operator: ${expr.operator.type}`);
 }
 
-function variableExpr(expr: Expr & { type: 'variable' }): unknown {
+function variableExpr(expr: VariableExpr): unknown {
   return environment.get(expr.name);
+}
+
+function assignExpr(expr: AssignExpr): unknown {
+  const value = evaluateExpr(expr.value);
+  environment.assign(expr.name, value);
+  return value;
 }
 
 function executeExpressionStmt(stmt: Stmt & { type: 'expression' }): unknown {
@@ -145,6 +161,7 @@ const exprInterpreter: ExprMatcher<unknown> = {
   unary: unaryExpr,
   binary: binaryExpr,
   variable: variableExpr,
+  assign: assignExpr,
 };
 
 const stmtInterpreter: StmtMatcher<unknown> = {
