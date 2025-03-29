@@ -63,6 +63,10 @@ const stmtDefinitions = [
       { type: 'Expr | null', name: 'initializer' },
     ],
   },
+  {
+    className: 'Block',
+    args: [{ type: '(Stmt | null)[]', name: 'statements' }],
+  },
 ];
 
 //------------------------------------------------------------------------------

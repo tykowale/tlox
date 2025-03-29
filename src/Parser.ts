@@ -11,7 +11,7 @@ import {
 import { TokenType } from 'src/TokenType';
 import { Lox } from 'src/index';
 import { ParseError } from 'src/Errors';
-import { createExpression, createPrint, createVar, Stmt } from 'src/Stmt';
+import { createBlock, createExpression, createPrint, createVar, Stmt } from 'src/Stmt';
 
 export class Parser {
   private current = 0;
@@ -64,10 +64,14 @@ export class Parser {
     return createVar(name, initializer);
   }
 
-  // statement → exprStmt | printStmt ;
+  // statement → exprStmt | printStmt | block;
   private statement(): Stmt {
     if (this.match('PRINT')) {
       return this.printStatement();
+    }
+
+    if (this.match('LEFT_BRACE')) {
+      return createBlock(this.block());
     }
 
     return this.expressionStatement();
@@ -260,6 +264,18 @@ export class Parser {
     this.consume('SEMICOLON', 'Expect ";" after expression.');
 
     return createExpression(expr);
+  }
+
+  private block(): (Stmt | null)[] {
+    const statements: (Stmt | null)[] = [];
+
+    while (!this.check('RIGHT_BRACE') && !this.isAtEnd()) {
+      statements.push(this.declaration());
+    }
+
+    this.consume('RIGHT_BRACE', 'Expect "}" after block.');
+
+    return statements;
   }
 
   private synchronize(): void {

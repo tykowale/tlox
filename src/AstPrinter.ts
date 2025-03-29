@@ -20,4 +20,6 @@ const astPrinterMatcher: ExprMatcher<string> = {
   grouping: expr => parenthesize('group', expr.expression),
   literal: expr => String(expr.value),
   unary: expr => parenthesize(expr.operator.lexeme, expr.right),
+  variable: expr => expr.name.lexeme,
+  assign: expr => parenthesize('=', { type: 'variable', name: expr.name }, expr.value),
 };

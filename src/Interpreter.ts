@@ -11,15 +11,15 @@ import {
 } from 'src/Expr';
 import { RuntimeError } from 'src/Errors';
 import { isTruthy, checkNumberOperand } from 'src/RuntimeChecks';
-import { StmtMatcher, Stmt, matchStmt } from 'src/Stmt';
+import { StmtMatcher, Stmt, matchStmt, ExpressionStmt, BlockStmt } from 'src/Stmt';
 import { Environment } from 'src/Environment';
 
-const environment = new Environment();
+const globalEnvironment = new Environment();
 
 export function interpret(statements: Stmt[]): void {
   try {
     for (const stmt of statements) {
-      executeStmt(stmt);
+      executeStmt(stmt, globalEnvironment);
     }
   } catch (error) {
     if (error instanceof RuntimeError) {
@@ -29,35 +29,36 @@ export function interpret(statements: Stmt[]): void {
 }
 
 function isExpr(node: Expr | Stmt): node is Expr {
-  return ['binary', 'grouping', 'literal', 'unary'].includes(node.type);
+  return ['binary', 'grouping', 'literal', 'unary', 'variable', 'assign'].includes(node.type);
 }
 
-export function evaluate(node: Expr | Stmt): unknown {
+export function evaluate(node: Expr | Stmt, env: Environment = globalEnvironment): unknown {
   if (isExpr(node)) {
-    return evaluateExpr(node);
+    return evaluateExpr(node, env);
   } else {
-    return executeStmt(node);
+    return executeStmt(node, env);
   }
 }
 
-function evaluateExpr(expr: Expr): unknown {
-  return matchExpr(expr, exprInterpreter);
+function evaluateExpr(expr: Expr, env: Environment): unknown {
+  return matchExpr(expr, createExprInterpreter(env));
 }
 
-function executeStmt(stmt: Stmt): unknown {
-  return matchStmt(stmt, stmtInterpreter);
+function executeStmt(stmt: Stmt, env: Environment): unknown {
+  return matchStmt(stmt, createStmtInterpreter(env));
 }
 
+// Expression evaluation functions
 function literalExpr(expr: LiteralExpr): unknown {
   return expr.value;
 }
 
-function groupingExpr(expr: GroupingExpr): unknown {
-  return evaluateExpr(expr.expression);
+function groupingExpr(expr: GroupingExpr, env: Environment): unknown {
+  return evaluateExpr(expr.expression, env);
 }
 
-function unaryExpr(expr: UnaryExpr): unknown {
-  const right = evaluateExpr(expr.right);
+function unaryExpr(expr: UnaryExpr, env: Environment): unknown {
+  const right = evaluateExpr(expr.right, env);
 
   switch (expr.operator.type) {
     case 'MINUS':
@@ -67,13 +68,12 @@ function unaryExpr(expr: UnaryExpr): unknown {
       return !isTruthy(right);
   }
 
-  // unreachable
   throw new Error(`Unexpected unary operator: ${expr.operator.type}`);
 }
 
-function binaryExpr(expr: BinaryExpr): unknown {
-  const left = evaluateExpr(expr.left);
-  const right = evaluateExpr(expr.right);
+function binaryExpr(expr: BinaryExpr, env: Environment): unknown {
+  const left = evaluateExpr(expr.left, env);
+  const right = evaluateExpr(expr.right, env);
 
   switch (expr.operator.type) {
     case 'MINUS':
@@ -120,52 +120,71 @@ function binaryExpr(expr: BinaryExpr): unknown {
       return left === right;
   }
 
-  // unreachable
   throw new Error(`Unexpected binary operator: ${expr.operator.type}`);
 }
 
-function variableExpr(expr: VariableExpr): unknown {
-  return environment.get(expr.name);
+function variableExpr(expr: VariableExpr, env: Environment): unknown {
+  return env.get(expr.name);
 }
 
-function assignExpr(expr: AssignExpr): unknown {
-  const value = evaluateExpr(expr.value);
-  environment.assign(expr.name, value);
+function assignExpr(expr: AssignExpr, env: Environment): unknown {
+  const value = evaluateExpr(expr.value, env);
+  env.assign(expr.name, value);
   return value;
 }
 
-function executeExpressionStmt(stmt: Stmt & { type: 'expression' }): unknown {
-  return evaluateExpr(stmt.expression);
+// Statement execution functions
+function executeExpressionStmt(stmt: ExpressionStmt, env: Environment): unknown {
+  return evaluateExpr(stmt.expression, env);
 }
 
-function executePrintStmt(stmt: Stmt & { type: 'print' }): unknown {
-  const value = evaluateExpr(stmt.expression);
+function executePrintStmt(stmt: Stmt & { type: 'print' }, env: Environment): unknown {
+  const value = evaluateExpr(stmt.expression, env);
   console.log(value);
   return null;
 }
 
-function executeVarStmt(stmt: Stmt & { type: 'var' }): unknown {
+function executeVarStmt(stmt: Stmt & { type: 'var' }, env: Environment): unknown {
   let value = null;
 
   if (stmt.initializer != null) {
-    value = evaluateExpr(stmt.initializer);
+    value = evaluateExpr(stmt.initializer, env);
   }
 
-  environment.define(stmt.name.lexeme, value);
+  env.define(stmt.name.lexeme, value);
   return null;
 }
 
-const exprInterpreter: ExprMatcher<unknown> = {
-  literal: literalExpr,
-  grouping: groupingExpr,
-  unary: unaryExpr,
-  binary: binaryExpr,
-  variable: variableExpr,
-  assign: assignExpr,
-};
+function executeBlockStmt(stmt: BlockStmt, env: Environment): unknown {
+  const blockEnv = new Environment(env);
 
-const stmtInterpreter: StmtMatcher<unknown> = {
-  expression: executeExpressionStmt,
-  print: executePrintStmt,
-  var: executeVarStmt,
-};
+  for (const statement of stmt.statements) {
+    if (statement == null) {
+      continue;
+    }
+
+    executeStmt(statement, blockEnv);
+  }
+
+  return null;
+}
+
+function createExprInterpreter(env: Environment): ExprMatcher<unknown> {
+  return {
+    literal: expr => literalExpr(expr),
+    grouping: expr => groupingExpr(expr, env),
+    unary: expr => unaryExpr(expr, env),
+    binary: expr => binaryExpr(expr, env),
+    variable: expr => variableExpr(expr, env),
+    assign: expr => assignExpr(expr, env),
+  };
+}
+
+function createStmtInterpreter(env: Environment): StmtMatcher<unknown> {
+  return {
+    expression: stmt => executeExpressionStmt(stmt, env),
+    print: stmt => executePrintStmt(stmt, env),
+    var: stmt => executeVarStmt(stmt, env),
+    block: stmt => executeBlockStmt(stmt, env),
+  };
+}
