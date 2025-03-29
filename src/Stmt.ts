@@ -16,12 +16,12 @@ export interface PrintStmt {
 export interface VarStmt {
   type: 'var';
   name: Token;
-  initializer: Expr | null;
+  initializer: Expr;
 }
 
 export interface BlockStmt {
   type: 'block';
-  statements: (Stmt | null)[];
+  statements: Stmt[];
 }
 
 export function createExpression(expression: Expr): ExpressionStmt {
@@ -38,7 +38,7 @@ export function createPrint(expression: Expr): PrintStmt {
   };
 }
 
-export function createVar(name: Token, initializer: Expr | null): VarStmt {
+export function createVar(name: Token, initializer: Expr): VarStmt {
   return {
     type: 'var',
     name,
@@ -46,7 +46,7 @@ export function createVar(name: Token, initializer: Expr | null): VarStmt {
   };
 }
 
-export function createBlock(statements: (Stmt | null)[]): BlockStmt {
+export function createBlock(statements: Stmt[]): BlockStmt {
   return {
     type: 'block',
     statements,
@@ -63,12 +63,12 @@ export type StmtMatcher<R> = {
 export function matchStmt<R>(stmt: Stmt, matcher: StmtMatcher<R>): R {
   switch (stmt.type) {
     case 'expression':
-      return matcher.expression(stmt);
+      return matcher.expression(stmt as ExpressionStmt);
     case 'print':
-      return matcher.print(stmt);
+      return matcher.print(stmt as PrintStmt);
     case 'var':
-      return matcher.var(stmt);
+      return matcher.var(stmt as VarStmt);
     case 'block':
-      return matcher.block(stmt);
+      return matcher.block(stmt as BlockStmt);
   }
 }

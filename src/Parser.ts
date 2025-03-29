@@ -54,7 +54,7 @@ export class Parser {
   private varDeclaration(): Stmt {
     const name = this.consume('IDENTIFIER', 'Expect variable name.');
 
-    let initializer: Expr | null = null;
+    let initializer: Expr = createLiteral(null);
 
     if (this.match('EQUAL')) {
       initializer = this.expression();
@@ -266,11 +266,15 @@ export class Parser {
     return createExpression(expr);
   }
 
-  private block(): (Stmt | null)[] {
-    const statements: (Stmt | null)[] = [];
+  private block(): Stmt[] {
+    const statements: Stmt[] = [];
 
     while (!this.check('RIGHT_BRACE') && !this.isAtEnd()) {
-      statements.push(this.declaration());
+      const stmt = this.declaration();
+
+      if (stmt !== null) {
+        statements.push(stmt);
+      }
     }
 
     this.consume('RIGHT_BRACE', 'Expect "}" after block.');

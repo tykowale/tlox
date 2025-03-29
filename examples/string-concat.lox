@@ -1,0 +1,10 @@
+// String concatenation examples
+print "Hello, " + "World!"; // String + String
+print "The answer is " + 42; // String + Number
+print 100 + " points"; // Number + String
+print "Score: " + 95 + "/100"; // Chained concatenation with mixed types
+print "Value: " + (5 + 10); // Expression in concatenation
+print "2 + 2 = " + (2 + 2); // Arithmetic expression in concatenation
+
+// Make sure arithmetic still works normally
+print 10 + 20; // Should be 30 

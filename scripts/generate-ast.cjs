@@ -60,12 +60,12 @@ const stmtDefinitions = [
     className: 'Var',
     args: [
       { type: 'Token', name: 'name' },
-      { type: 'Expr | null', name: 'initializer' },
+      { type: 'Expr', name: 'initializer' },
     ],
   },
   {
     className: 'Block',
-    args: [{ type: '(Stmt | null)[]', name: 'statements' }],
+    args: [{ type: 'Stmt[]', name: 'statements' }],
   },
 ];
 

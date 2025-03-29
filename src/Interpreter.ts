@@ -85,11 +85,11 @@ function binaryExpr(expr: BinaryExpr, env: Environment): unknown {
         return left + right;
       }
 
-      if (typeof left === 'string' && typeof right === 'string') {
-        return left + right;
+      if (typeof left === 'string' || typeof right === 'string') {
+        return String(left) + String(right);
       }
 
-      throw new RuntimeError(expr.operator, 'Operands must be two numbers or two strings.');
+      throw new RuntimeError(expr.operator, 'Operands must be two numbers or at least one string.');
     case 'SLASH':
       checkNumberOperand(expr.operator, left);
       checkNumberOperand(expr.operator, right);
@@ -145,12 +145,7 @@ function executePrintStmt(stmt: Stmt & { type: 'print' }, env: Environment): unk
 }
 
 function executeVarStmt(stmt: Stmt & { type: 'var' }, env: Environment): unknown {
-  let value = null;
-
-  if (stmt.initializer != null) {
-    value = evaluateExpr(stmt.initializer, env);
-  }
-
+  const value = evaluateExpr(stmt.initializer, env);
   env.define(stmt.name.lexeme, value);
   return null;
 }
@@ -159,10 +154,6 @@ function executeBlockStmt(stmt: BlockStmt, env: Environment): unknown {
   const blockEnv = new Environment(env);
 
   for (const statement of stmt.statements) {
-    if (statement == null) {
-      continue;
-    }
-
     executeStmt(statement, blockEnv);
   }
 
