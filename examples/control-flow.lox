@@ -229,4 +229,102 @@ while (j < 5) {
   }
   j = j + 1;
 }
-print "Final result: " + result; // Should be 10 (sum of 0+1+2+3+4) 
+print "Final result: " + result; // Should be 10 (sum of 0+1+2+3+4)
+
+// For loops
+print "--- For loops ---";
+
+// Basic for loop
+print "Basic for loop:";
+for (var i = 1; i <= 5; i = i + 1) {
+  print i;
+}
+
+// For loop with complex condition
+print "For loop with complex condition:";
+for (var i = 10; i > 0; i = i - 2) {
+  print "Countdown: " + i;
+}
+
+// For loop with empty initializer
+print "For loop with empty initializer:";
+var count = 0;
+for (; count < 3; count = count + 1) {
+  print "Count: " + count;
+}
+
+// For loop with early exit using condition
+print "For loop with early exit:";
+for (var i = 0; i < 10; i = i + 1) {
+  print "Iteration: " + i;
+  if (i >= 2) {
+    print "Exiting early";
+    i = 10; // Force exit by making condition false on next check
+  }
+}
+
+// For loop with empty increment
+print "For loop with empty increment:";
+for (var i = 0; i < 3;) {
+  print "Manual increment: " + i;
+  i = i + 1;
+}
+
+// Nested for loops
+print "Nested for loops:";
+for (var i = 1; i <= 3; i = i + 1) {
+  for (var j = 1; j <= 2; j = j + 1) {
+    print "i=" + i + ", j=" + j;
+  }
+}
+
+// Fibonacci sequence with for loop
+print "Fibonacci sequence:";
+var a = 0;
+var b = 1;
+print a;
+print b;
+for (var i = 2; i < 10; i = i + 1) {
+  var temp = a + b;
+  print temp;
+  a = b;
+  b = temp;
+}
+
+// For loop with complex body
+print "For loop with complex body:";
+var sum = 0;
+for (var i = 1; i <= 5; i = i + 1) {
+  if (i <= 2) {
+    sum = sum + i;
+    print "Adding " + i + ", sum = " + sum;
+  } else {
+    sum = sum + (i * 2);
+    print "Adding " + i + "*2, sum = " + sum;
+  }
+}
+
+// Demonstrating for loop as syntactic sugar for while
+print "For loop vs equivalent while loop:";
+// For loop
+var forSum = 0;
+for (var i = 1; i <= 5; i = i + 1) {
+  forSum = forSum + i;
+}
+print "For loop sum: " + forSum;
+
+// Equivalent while loop
+var whileSum = 0;
+var i = 1;
+while (i <= 5) {
+  whileSum = whileSum + i;
+  i = i + 1;
+}
+print "While loop sum: " + whileSum;
+
+// Verify they produce the same result
+if (forSum == whileSum) {
+  print "Both loops produce the same result: " + forSum;
+} else {
+  print "ERROR: Loops produced different results!";
+} 
