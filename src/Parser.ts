@@ -75,6 +75,10 @@ export class Parser {
       return createBlock(this.block());
     }
 
+    if (this.match('IF')) {
+      return this.ifStatement();
+    }
+
     return this.expressionStatement();
   }
 

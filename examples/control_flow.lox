@@ -1,0 +1,148 @@
+// Basic if statements
+print "--- Basic if statements ---";
+if (true) {
+  print "This should be printed";
+}
+
+if (false) {
+  print "This should NOT be printed";
+}
+
+// If-else statements
+print "--- If-else statements ---";
+if (true) {
+  print "True branch executed";
+} else {
+  print "This should NOT be printed";
+}
+
+if (false) {
+  print "This should NOT be printed";
+} else {
+  print "False branch executed";
+}
+
+// Nested if statements
+print "--- Nested if statements ---";
+if (true) {
+  if (true) {
+    print "Nested if: both true";
+  } else {
+    print "This should NOT be printed";
+  }
+} else {
+  print "This should NOT be printed";
+}
+
+// Logical operators
+print "--- Logical operators ---";
+print "true and true = " + (true and true); // Should be true
+print "true and false = " + (true and false); // Should be false
+print "false and true = " + (false and true); // Should be false (short-circuit)
+print "false and false = " + (false and false); // Should be false (short-circuit)
+
+print "true or true = " + (true or true); // Should be true (short-circuit)
+print "true or false = " + (true or false); // Should be true (short-circuit)
+print "false or true = " + (false or true); // Should be true
+print "false or false = " + (false or false); // Should be false
+
+// Logical operator precedence
+print "--- Logical operator precedence ---";
+print "true or false and false = " + (true or false and false); // Should be true ('and' has higher precedence)
+print "(true or false) and false = " + ((true or false) and false); // Should be false
+
+// Using logical operators in if statements
+print "--- Logical operators in if statements ---";
+if (true and true) {
+  print "true and true: condition met";
+}
+
+if (true and false) {
+  print "This should NOT be printed";
+} else {
+  print "true and false: condition not met";
+}
+
+if (false or true) {
+  print "false or true: condition met";
+}
+
+if (false or false) {
+  print "This should NOT be printed";
+} else {
+  print "false or false: condition not met";
+}
+
+// More complex conditions
+print "--- Complex conditions ---";
+var a = 5;
+var b = 10;
+var c = 15;
+
+if (a < b and b < c) {
+  print "a < b < c: condition met";
+}
+
+if (a > b or b < c) {
+  print "a > b or b < c: condition met";
+}
+
+if ((a > b or a < c) and a == 5) {
+  print "Combined condition met";
+}
+
+// Variable assignment in conditions
+print "--- Assignment and conditions ---";
+var x = nil;
+if (x == nil) {
+  print "x is nil initially";
+}
+
+x = 42;
+if (x != nil) {
+  print "x is now " + x;
+}
+
+// Short-circuit evaluation
+print "--- Short-circuit evaluation ---";
+var shortCircuit = "not reached";
+var didShortCircuit = true;
+
+// Simple short-circuit demonstration
+if (false and didShortCircuit) {
+  print "This should NOT be printed";
+} else {
+  print "false and X short-circuits at 'false'";
+}
+
+if (true or didShortCircuit) {
+  print "true or X short-circuits at 'true'";
+} else {
+  print "This should NOT be printed";
+}
+
+// Truthy and falsy values
+print "--- Truthy and falsy values ---";
+if (0) {
+  print "0 is truthy in Lox";
+} else {
+  print "0 is falsy in Lox";
+}
+
+if ("") {
+  print "Empty string is truthy in Lox";
+} else {
+  print "Empty string is falsy in Lox";
+}
+
+if ("hello") {
+  print "Non-empty string is truthy in Lox";
+} else {
+  print "Non-empty string is falsy in Lox";
+}
+
+if (nil) {
+  print "nil is truthy in Lox";
+} else {
+  print "nil is falsy in Lox";
+} 
