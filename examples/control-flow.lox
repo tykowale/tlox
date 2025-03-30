@@ -145,4 +145,88 @@ if (nil) {
   print "nil is truthy in Lox";
 } else {
   print "nil is falsy in Lox";
-} 
+}
+
+// While loops
+print "--- While loops ---";
+
+// Basic while loop
+print "Basic while loop:";
+var i = 1;
+while (i <= 5) {
+  print i;
+  i = i + 1;
+}
+
+// While loop with break condition
+print "While loop with condition:";
+var sum = 0;
+var count = 1;
+while (count <= 10) {
+  sum = sum + count;
+  count = count + 1;
+}
+print "Sum of numbers 1-10: " + sum;
+
+// Nested while loops
+print "Nested while loops:";
+var outer = 1;
+while (outer <= 3) {
+  var inner = 1;
+  while (inner <= 3) {
+    print "Outer: " + outer + ", Inner: " + inner;
+    inner = inner + 1;
+  }
+  outer = outer + 1;
+}
+
+// While loop with logical operators
+print "While loop with logical operators:";
+var x = 1;
+while (x <= 5 and x < 6) {
+  print "x is: " + x;
+  x = x + 2;
+}
+
+// Early exit with if statement
+print "Early exit pattern:";
+var n = 1;
+while (n <= 10) {
+  if (n > 5) {
+    print "Exiting early at " + n;
+    n = 11; // Simulate a break
+  } else {
+    print "n = " + n;
+    n = n + 1;
+  }
+}
+
+// Counter with multiple conditions
+print "Counter with multiple modifications:";
+var counter = 0;
+var isEven = false;
+while (counter < 10) {
+  counter = counter + 1;
+  
+  if (isEven) {
+    print counter + " is even";
+    isEven = false;
+  } else {
+    print counter + " is odd";
+    isEven = true;
+  }
+}
+
+// Complex while loop
+print "Complex while loop:";
+var result = 0;
+var j = 0;
+while (j < 5) {
+  var k = j;
+  while (k > 0) {
+    result = result + 1;
+    k = k - 1;
+  }
+  j = j + 1;
+}
+print "Final result: " + result; // Should be 10 (sum of 0+1+2+3+4) 

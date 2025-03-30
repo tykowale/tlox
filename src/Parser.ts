@@ -12,7 +12,15 @@ import {
 import { TokenType } from 'src/TokenType';
 import { Lox } from 'src/index';
 import { ParseError } from 'src/Errors';
-import { createBlock, createExpression, createIf, createPrint, createVar, Stmt } from 'src/Stmt';
+import {
+  createBlock,
+  createExpression,
+  createIf,
+  createPrint,
+  createVar,
+  createWhile,
+  Stmt,
+} from 'src/Stmt';
 
 export class Parser {
   private current = 0;
@@ -65,10 +73,14 @@ export class Parser {
     return createVar(name, initializer);
   }
 
-  // statement → exprStmt | printStmt | block | ifStmt;
+  // statement → exprStmt | ifStmt | printStmt | whileStmt | block;
   private statement(): Stmt {
     if (this.match('PRINT')) {
       return this.printStatement();
+    }
+
+    if (this.match('WHILE')) {
+      return this.whileStatement();
     }
 
     if (this.match('LEFT_BRACE')) {
@@ -80,6 +92,17 @@ export class Parser {
     }
 
     return this.expressionStatement();
+  }
+
+  // whileStmt → "while" "(" expression ")" statement ;
+  private whileStatement(): Stmt {
+    this.consume('LEFT_PAREN', 'Expect "(" after "while".');
+    const condition = this.expression();
+    this.consume('RIGHT_PAREN', 'Expect ")" after condition.');
+
+    const body = this.statement();
+
+    return createWhile(condition, body);
   }
 
   // ifStmt → "if" "(" expression ")" statement ( "else" statement )? ;

@@ -57,6 +57,10 @@ const exprDefinitions = [
 
 const stmtDefinitions = [
   {
+    className: 'Block',
+    args: [{ type: 'Stmt[]', name: 'statements' }],
+  },
+  {
     className: 'Expression',
     args: [{ type: 'Expr', name: 'expression' }],
   },
@@ -80,8 +84,11 @@ const stmtDefinitions = [
     ],
   },
   {
-    className: 'Block',
-    args: [{ type: 'Stmt[]', name: 'statements' }],
+    className: 'While',
+    args: [
+      { type: 'Expr', name: 'condition' },
+      { type: 'Stmt', name: 'body' },
+    ],
   },
 ];
 

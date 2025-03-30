@@ -21,6 +21,7 @@ import {
   PrintStmt,
   VarStmt,
   IfStmt,
+  WhileStmt,
 } from 'src/Stmt';
 import { Environment } from 'src/Environment';
 
@@ -186,6 +187,14 @@ function executeBlockStmt(stmt: BlockStmt, env: Environment): unknown {
   return null;
 }
 
+function executeWhileStmt(stmt: WhileStmt, env: Environment): unknown {
+  while (isTruthy(evaluateExpr(stmt.condition, env))) {
+    executeStmt(stmt.body, env);
+  }
+
+  return null;
+}
+
 function executeIfStmt(stmt: IfStmt, env: Environment): unknown {
   if (isTruthy(evaluateExpr(stmt.condition, env))) {
     executeStmt(stmt.thenBranch, env);
@@ -215,5 +224,6 @@ function createStmtInterpreter(env: Environment): StmtMatcher<unknown> {
     var: stmt => executeVarStmt(stmt, env),
     block: stmt => executeBlockStmt(stmt, env),
     if: stmt => executeIfStmt(stmt, env),
+    while: stmt => executeWhileStmt(stmt, env),
   };
 }

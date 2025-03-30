@@ -1,7 +1,12 @@
 import { Expr } from 'src/Expr';
 import { Token } from 'src/Token';
 
-export type Stmt = ExpressionStmt | IfStmt | PrintStmt | VarStmt | BlockStmt;
+export type Stmt = BlockStmt | ExpressionStmt | IfStmt | PrintStmt | VarStmt | WhileStmt;
+
+export interface BlockStmt {
+  type: 'block';
+  statements: Stmt[];
+}
 
 export interface ExpressionStmt {
   type: 'expression';
@@ -26,9 +31,17 @@ export interface VarStmt {
   initializer: Expr;
 }
 
-export interface BlockStmt {
-  type: 'block';
-  statements: Stmt[];
+export interface WhileStmt {
+  type: 'while';
+  condition: Expr;
+  body: Stmt;
+}
+
+export function createBlock(statements: Stmt[]): BlockStmt {
+  return {
+    type: 'block',
+    statements,
+  };
 }
 
 export function createExpression(expression: Expr): ExpressionStmt {
@@ -62,23 +75,27 @@ export function createVar(name: Token, initializer: Expr): VarStmt {
   };
 }
 
-export function createBlock(statements: Stmt[]): BlockStmt {
+export function createWhile(condition: Expr, body: Stmt): WhileStmt {
   return {
-    type: 'block',
-    statements,
+    type: 'while',
+    condition,
+    body,
   };
 }
 
 export type StmtMatcher<R> = {
+  block: (b: BlockStmt) => R;
   expression: (e: ExpressionStmt) => R;
   if: (i: IfStmt) => R;
   print: (p: PrintStmt) => R;
   var: (v: VarStmt) => R;
-  block: (b: BlockStmt) => R;
+  while: (w: WhileStmt) => R;
 };
 
 export function matchStmt<R>(stmt: Stmt, matcher: StmtMatcher<R>): R {
   switch (stmt.type) {
+    case 'block':
+      return matcher.block(stmt as BlockStmt);
     case 'expression':
       return matcher.expression(stmt as ExpressionStmt);
     case 'if':
@@ -87,7 +104,7 @@ export function matchStmt<R>(stmt: Stmt, matcher: StmtMatcher<R>): R {
       return matcher.print(stmt as PrintStmt);
     case 'var':
       return matcher.var(stmt as VarStmt);
-    case 'block':
-      return matcher.block(stmt as BlockStmt);
+    case 'while':
+      return matcher.while(stmt as WhileStmt);
   }
 }
