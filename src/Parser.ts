@@ -5,6 +5,7 @@ import {
   createBinary,
   createGrouping,
   createLiteral,
+  createLogical,
   createUnary,
   createVariable,
 } from 'src/Expr';
@@ -98,9 +99,9 @@ export class Parser {
     return this.assignment();
   }
 
-  // assignment → IDENTIFIER "=" assignment | equality ;
+  // assignment → IDENTIFIER "=" assignment | logicalOr ;
   private assignment(): Expr {
-    const expr = this.equality();
+    const expr = this.logicalOr();
 
     if (this.match('EQUAL')) {
       const equals = this.previous();
@@ -112,6 +113,34 @@ export class Parser {
       }
 
       throw this.error(equals, 'Invalid assignment target.');
+    }
+
+    return expr;
+  }
+
+  // logicalOr → logicalAnd ( "or" logicalAnd )* ;
+  private logicalOr(): Expr {
+    let expr = this.logicalAnd();
+
+    while (this.match('OR')) {
+      const operator = this.previous();
+      const right = this.logicalAnd();
+
+      expr = createLogical(expr, operator, right);
+    }
+
+    return expr;
+  }
+
+  // logicalAnd → equality ( "and" equality )* ;
+  private logicalAnd(): Expr {
+    let expr = this.equality();
+
+    while (this.match('AND')) {
+      const operator = this.previous();
+      const right = this.equality();
+
+      expr = createLogical(expr, operator, right);
     }
 
     return expr;

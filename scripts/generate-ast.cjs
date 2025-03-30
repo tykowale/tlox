@@ -35,6 +35,14 @@ const exprDefinitions = [
     args: [{ type: 'unknown', name: 'value' }],
   },
   {
+    className: 'Logical',
+    args: [
+      { type: 'Expr', name: 'left' },
+      { type: 'Token', name: 'operator' },
+      { type: 'Expr', name: 'right' },
+    ],
+  },
+  {
     className: 'Unary',
     args: [
       { type: 'Token', name: 'operator' },

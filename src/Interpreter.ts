@@ -5,6 +5,7 @@ import {
   ExprMatcher,
   GroupingExpr,
   LiteralExpr,
+  LogicalExpr,
   UnaryExpr,
   VariableExpr,
   matchExpr,
@@ -142,6 +143,22 @@ function assignExpr(expr: AssignExpr, env: Environment): unknown {
   return value;
 }
 
+function logicalExpr(expr: LogicalExpr, env: Environment): unknown {
+  const left = evaluateExpr(expr.left, env);
+
+  if (expr.operator.type === 'OR') {
+    if (isTruthy(left)) {
+      return left;
+    }
+  } else {
+    if (!isTruthy(left)) {
+      return left;
+    }
+  }
+
+  return evaluateExpr(expr.right, env);
+}
+
 // Statement execution functions
 function executeExpressionStmt(stmt: ExpressionStmt, env: Environment): unknown {
   return evaluateExpr(stmt.expression, env);
@@ -187,6 +204,7 @@ function createExprInterpreter(env: Environment): ExprMatcher<unknown> {
     binary: expr => binaryExpr(expr, env),
     variable: expr => variableExpr(expr, env),
     assign: expr => assignExpr(expr, env),
+    logical: expr => logicalExpr(expr, env),
   };
 }
 

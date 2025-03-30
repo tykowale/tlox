@@ -1,6 +1,6 @@
 import { Token } from 'src/Token';
 
-export type Expr = AssignExpr | BinaryExpr | GroupingExpr | LiteralExpr | UnaryExpr | VariableExpr;
+export type Expr = AssignExpr | BinaryExpr | GroupingExpr | LiteralExpr | LogicalExpr | UnaryExpr | VariableExpr;
 
 export interface AssignExpr {
   type: 'assign';
@@ -23,6 +23,13 @@ export interface GroupingExpr {
 export interface LiteralExpr {
   type: 'literal';
   value: unknown;
+}
+
+export interface LogicalExpr {
+  type: 'logical';
+  left: Expr;
+  operator: Token;
+  right: Expr;
 }
 
 export interface UnaryExpr {
@@ -67,6 +74,15 @@ export function createLiteral(value: unknown): LiteralExpr {
   };
 }
 
+export function createLogical(left: Expr, operator: Token, right: Expr): LogicalExpr {
+  return {
+    type: 'logical',
+    left,
+    operator,
+    right,
+  };
+}
+
 export function createUnary(operator: Token, right: Expr): UnaryExpr {
   return {
     type: 'unary',
@@ -87,6 +103,7 @@ export type ExprMatcher<R> = {
   binary: (b: BinaryExpr) => R;
   grouping: (g: GroupingExpr) => R;
   literal: (l: LiteralExpr) => R;
+  logical: (l: LogicalExpr) => R;
   unary: (u: UnaryExpr) => R;
   variable: (v: VariableExpr) => R;
 };
@@ -101,6 +118,8 @@ export function matchExpr<R>(expr: Expr, matcher: ExprMatcher<R>): R {
       return matcher.grouping(expr as GroupingExpr);
     case 'literal':
       return matcher.literal(expr as LiteralExpr);
+    case 'logical':
+      return matcher.logical(expr as LogicalExpr);
     case 'unary':
       return matcher.unary(expr as UnaryExpr);
     case 'variable':
