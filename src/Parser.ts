@@ -11,7 +11,7 @@ import {
 import { TokenType } from 'src/TokenType';
 import { Lox } from 'src/index';
 import { ParseError } from 'src/Errors';
-import { createBlock, createExpression, createPrint, createVar, Stmt } from 'src/Stmt';
+import { createBlock, createExpression, createIf, createPrint, createVar, Stmt } from 'src/Stmt';
 
 export class Parser {
   private current = 0;
@@ -64,7 +64,7 @@ export class Parser {
     return createVar(name, initializer);
   }
 
-  // statement → exprStmt | printStmt | block;
+  // statement → exprStmt | printStmt | block | ifStmt;
   private statement(): Stmt {
     if (this.match('PRINT')) {
       return this.printStatement();
@@ -75,6 +75,22 @@ export class Parser {
     }
 
     return this.expressionStatement();
+  }
+
+  // ifStmt → "if" "(" expression ")" statement ( "else" statement )? ;
+  private ifStatement(): Stmt {
+    this.consume('LEFT_PAREN', 'Expect "(" after "if".');
+    const condition = this.expression();
+    this.consume('RIGHT_PAREN', 'Expect ")" after condition.');
+
+    const thenBranch = this.statement();
+    let elseBranch: Stmt | null = null;
+
+    if (this.match('ELSE')) {
+      elseBranch = this.statement();
+    }
+
+    return createIf(condition, thenBranch, elseBranch);
   }
 
   // expression → assignment ;

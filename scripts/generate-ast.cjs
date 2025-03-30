@@ -53,6 +53,14 @@ const stmtDefinitions = [
     args: [{ type: 'Expr', name: 'expression' }],
   },
   {
+    className: 'If',
+    args: [
+      { type: 'Expr', name: 'condition' },
+      { type: 'Stmt', name: 'thenBranch' },
+      { type: 'Stmt | null', name: 'elseBranch' },
+    ],
+  },
+  {
     className: 'Print',
     args: [{ type: 'Expr', name: 'expression' }],
   },

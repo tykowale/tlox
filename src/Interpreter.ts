@@ -11,7 +11,16 @@ import {
 } from 'src/Expr';
 import { RuntimeError } from 'src/Errors';
 import { isTruthy, checkNumberOperand } from 'src/RuntimeChecks';
-import { StmtMatcher, Stmt, matchStmt, ExpressionStmt, BlockStmt } from 'src/Stmt';
+import {
+  StmtMatcher,
+  Stmt,
+  matchStmt,
+  ExpressionStmt,
+  BlockStmt,
+  PrintStmt,
+  VarStmt,
+  IfStmt,
+} from 'src/Stmt';
 import { Environment } from 'src/Environment';
 
 const globalEnvironment = new Environment();
@@ -138,13 +147,13 @@ function executeExpressionStmt(stmt: ExpressionStmt, env: Environment): unknown 
   return evaluateExpr(stmt.expression, env);
 }
 
-function executePrintStmt(stmt: Stmt & { type: 'print' }, env: Environment): unknown {
+function executePrintStmt(stmt: PrintStmt, env: Environment): unknown {
   const value = evaluateExpr(stmt.expression, env);
   console.log(value);
   return null;
 }
 
-function executeVarStmt(stmt: Stmt & { type: 'var' }, env: Environment): unknown {
+function executeVarStmt(stmt: VarStmt, env: Environment): unknown {
   const value = evaluateExpr(stmt.initializer, env);
   env.define(stmt.name.lexeme, value);
   return null;
@@ -155,6 +164,16 @@ function executeBlockStmt(stmt: BlockStmt, env: Environment): unknown {
 
   for (const statement of stmt.statements) {
     executeStmt(statement, blockEnv);
+  }
+
+  return null;
+}
+
+function executeIfStmt(stmt: IfStmt, env: Environment): unknown {
+  if (isTruthy(evaluateExpr(stmt.condition, env))) {
+    executeStmt(stmt.thenBranch, env);
+  } else if (stmt.elseBranch != null) {
+    executeStmt(stmt.elseBranch, env);
   }
 
   return null;
@@ -177,5 +196,6 @@ function createStmtInterpreter(env: Environment): StmtMatcher<unknown> {
     print: stmt => executePrintStmt(stmt, env),
     var: stmt => executeVarStmt(stmt, env),
     block: stmt => executeBlockStmt(stmt, env),
+    if: stmt => executeIfStmt(stmt, env),
   };
 }
