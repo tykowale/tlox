@@ -1,6 +1,7 @@
 import {
   AssignExpr,
   BinaryExpr,
+  CallExpr,
   Expr,
   ExprMatcher,
   GroupingExpr,
@@ -24,8 +25,16 @@ import {
   WhileStmt,
 } from 'src/Stmt';
 import { Environment } from 'src/Environment';
+import { LoxCallable } from './LoxCallable';
 
 const globalEnvironment = new Environment();
+globalEnvironment.define('clock', {
+  __type: 'LoxCallable',
+  arity: 0,
+  call: () => Date.now(),
+});
+
+export type Interpreter = (statements: Stmt[]) => void;
 
 export function interpret(statements: Stmt[]): void {
   try {
@@ -160,6 +169,23 @@ function logicalExpr(expr: LogicalExpr, env: Environment): unknown {
   return evaluateExpr(expr.right, env);
 }
 
+function callExpr(expr: CallExpr, env: Environment): unknown {
+  const callee = evaluateExpr(expr.callee, env);
+
+  const args = expr.args.map(arg => evaluateExpr(arg, env));
+
+  const loxCallable = callee as unknown as LoxCallable;
+
+  if (args.length !== loxCallable.arity) {
+    throw new RuntimeError(
+      expr.paren,
+      `Expected ${loxCallable.arity} arguments but got ${args.length}.`,
+    );
+  }
+
+  return loxCallable.call(interpret, args);
+}
+
 // Statement execution functions
 function executeExpressionStmt(stmt: ExpressionStmt, env: Environment): unknown {
   return evaluateExpr(stmt.expression, env);
@@ -214,6 +240,7 @@ function createExprInterpreter(env: Environment): ExprMatcher<unknown> {
     variable: expr => variableExpr(expr, env),
     assign: expr => assignExpr(expr, env),
     logical: expr => logicalExpr(expr, env),
+    call: expr => callExpr(expr, env),
   };
 }
 

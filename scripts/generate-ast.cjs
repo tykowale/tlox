@@ -27,6 +27,14 @@ const exprDefinitions = [
     ],
   },
   {
+    className: 'Call',
+    args: [
+      { type: 'Expr', name: 'callee' },
+      { type: 'Token', name: 'paren' },
+      { type: 'Expr[]', name: 'args' },
+    ],
+  },
+  {
     className: 'Grouping',
     args: [{ type: 'Expr', name: 'expression' }],
   },

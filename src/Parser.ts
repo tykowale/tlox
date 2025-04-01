@@ -3,6 +3,7 @@ import {
   Expr,
   createAssign,
   createBinary,
+  createCall,
   createGrouping,
   createLiteral,
   createLogical,
@@ -279,7 +280,7 @@ export class Parser {
     return expr;
   }
 
-  // unary → ( "!" | "-" ) unary | primary ;
+  // unary → ( "!" | "-" ) unary | call ;
   private unary(): Expr {
     if (this.match('BANG', 'MINUS')) {
       const operator = this.previous();
@@ -288,7 +289,40 @@ export class Parser {
       return createUnary(operator, right);
     }
 
-    return this.primary();
+    return this.call();
+  }
+
+  // call → primary ( "(" arguments? ")" )* ;
+  private call(): Expr {
+    let expr = this.primary();
+
+    while (true) {
+      if (this.match('LEFT_PAREN')) {
+        expr = this.finishCall(expr);
+      } else {
+        break;
+      }
+    }
+
+    return expr;
+  }
+
+  private finishCall(callee: Expr): Expr {
+    const args: Expr[] = [];
+
+    if (!this.check('RIGHT_PAREN')) {
+      do {
+        if (args.length >= 255) {
+          this.error(this.peek(), 'Cannot have more than 255 arguments.');
+        }
+
+        args.push(this.expression());
+      } while (this.match('COMMA'));
+    }
+
+    const paren = this.consume('RIGHT_PAREN', 'Expect ")" after arguments.');
+
+    return createCall(callee, paren, args);
   }
 
   // primary → NUMBER | STRING | "true" | "false" | "nil" | "(" expression ")" ;

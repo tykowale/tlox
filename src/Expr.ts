@@ -1,6 +1,14 @@
 import { Token } from 'src/Token';
 
-export type Expr = AssignExpr | BinaryExpr | GroupingExpr | LiteralExpr | LogicalExpr | UnaryExpr | VariableExpr;
+export type Expr =
+  | AssignExpr
+  | BinaryExpr
+  | CallExpr
+  | GroupingExpr
+  | LiteralExpr
+  | LogicalExpr
+  | UnaryExpr
+  | VariableExpr;
 
 export interface AssignExpr {
   type: 'assign';
@@ -13,6 +21,13 @@ export interface BinaryExpr {
   left: Expr;
   operator: Token;
   right: Expr;
+}
+
+export interface CallExpr {
+  type: 'call';
+  callee: Expr;
+  paren: Token;
+  args: Expr[];
 }
 
 export interface GroupingExpr {
@@ -60,6 +75,15 @@ export function createBinary(left: Expr, operator: Token, right: Expr): BinaryEx
   };
 }
 
+export function createCall(callee: Expr, paren: Token, args: Expr[]): CallExpr {
+  return {
+    type: 'call',
+    callee,
+    paren,
+    args,
+  };
+}
+
 export function createGrouping(expression: Expr): GroupingExpr {
   return {
     type: 'grouping',
@@ -101,6 +125,7 @@ export function createVariable(name: Token): VariableExpr {
 export type ExprMatcher<R> = {
   assign: (a: AssignExpr) => R;
   binary: (b: BinaryExpr) => R;
+  call: (c: CallExpr) => R;
   grouping: (g: GroupingExpr) => R;
   literal: (l: LiteralExpr) => R;
   logical: (l: LogicalExpr) => R;
@@ -114,6 +139,8 @@ export function matchExpr<R>(expr: Expr, matcher: ExprMatcher<R>): R {
       return matcher.assign(expr as AssignExpr);
     case 'binary':
       return matcher.binary(expr as BinaryExpr);
+    case 'call':
+      return matcher.call(expr as CallExpr);
     case 'grouping':
       return matcher.grouping(expr as GroupingExpr);
     case 'literal':
