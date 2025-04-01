@@ -62,8 +62,17 @@ export class Lox {
     interpret(expr);
   }
 
-  public static error(line: number, message: string): void {
-    Lox.report(line, '', message);
+  public static error(line: number | Token, message: string): void {
+    if (typeof line === 'number') {
+      Lox.report(line, '', message);
+    } else {
+      // line is a Token
+      if (line.type === 'EOF') {
+        Lox.report(line.line, ' at end', message);
+      } else {
+        Lox.report(line.line, ` at '${line.lexeme}'`, message);
+      }
+    }
   }
 
   public static tokenError(token: Token, message: string): void {

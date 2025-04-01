@@ -1,6 +1,6 @@
 # TLox - TypeScript Lox Interpreter
 
-A TypeScript implementation of the Lox programming language from the book [Crafting Interpreters](https://craftinginterpreters.com/) by Robert Nystrom. This implementation follows a mixed OOP and FP approach rather than the pure object-oriented approach used in the book.
+A TypeScript implementation of the Lox programming language from the book [Crafting Interpreters](https://craftinginterpreters.com/) by Robert Nystrom.
 
 ## Running the Interpreter
 

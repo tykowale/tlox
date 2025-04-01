@@ -1,27 +1,9 @@
 import { Token } from 'src/Token';
-import {
-  Expr,
-  createAssign,
-  createBinary,
-  createCall,
-  createGrouping,
-  createLiteral,
-  createLogical,
-  createUnary,
-  createVariable,
-} from 'src/Expr';
+import { Expr, Assign, Binary, Call, Grouping, Literal, Logical, Unary, Variable } from 'src/Expr';
 import { TokenType } from 'src/TokenType';
 import { Lox } from 'src/index';
 import { ParseError } from 'src/Errors';
-import {
-  createBlock,
-  createExpression,
-  createIf,
-  createPrint,
-  createVar,
-  createWhile,
-  Stmt,
-} from 'src/Stmt';
+import { Block, Expression, If, Print, Stmt, Var, While } from 'src/Stmt';
 
 export class Parser {
   private current = 0;
@@ -64,14 +46,14 @@ export class Parser {
   private varDeclaration(): Stmt {
     const name = this.consume('IDENTIFIER', 'Expect variable name.');
 
-    let initializer: Expr = createLiteral(null);
+    let initializer: Expr = new Literal(null);
 
     if (this.match('EQUAL')) {
       initializer = this.expression();
     }
 
     this.consume('SEMICOLON', 'Expect ";" after variable declaration.');
-    return createVar(name, initializer);
+    return new Var(name, initializer);
   }
 
   // statement → exprStmt | forStmt | ifStmt | printStmt | whileStmt | block;
@@ -93,7 +75,7 @@ export class Parser {
     }
 
     if (this.match('LEFT_BRACE')) {
-      return createBlock(this.block());
+      return new Block(this.block());
     }
 
     return this.expressionStatement();
@@ -129,17 +111,17 @@ export class Parser {
     let body = this.statement();
 
     if (increment != null) {
-      body = createBlock([body, createExpression(increment)]);
+      body = new Block([body, new Expression(increment)]);
     }
 
     if (condition == null) {
-      condition = createLiteral(true);
+      condition = new Literal(true);
     }
 
-    body = createWhile(condition, body);
+    body = new While(condition, body);
 
     if (initializer != null) {
-      body = createBlock([initializer, body]);
+      body = new Block([initializer, body]);
     }
 
     return body;
@@ -153,7 +135,7 @@ export class Parser {
 
     const body = this.statement();
 
-    return createWhile(condition, body);
+    return new While(condition, body);
   }
 
   // ifStmt → "if" "(" expression ")" statement ( "else" statement )? ;
@@ -169,7 +151,7 @@ export class Parser {
       elseBranch = this.statement();
     }
 
-    return createIf(condition, thenBranch, elseBranch);
+    return new If(condition, thenBranch, elseBranch);
   }
 
   // expression → assignment ;
@@ -185,9 +167,9 @@ export class Parser {
       const equals = this.previous();
       const value = this.assignment();
 
-      if (expr.type === 'variable') {
+      if (expr instanceof Variable) {
         const name = expr.name;
-        return createAssign(name, value);
+        return new Assign(name, value);
       }
 
       throw this.error(equals, 'Invalid assignment target.');
@@ -203,8 +185,7 @@ export class Parser {
     while (this.match('OR')) {
       const operator = this.previous();
       const right = this.logicalAnd();
-
-      expr = createLogical(expr, operator, right);
+      expr = new Logical(expr, operator, right);
     }
 
     return expr;
@@ -217,22 +198,20 @@ export class Parser {
     while (this.match('AND')) {
       const operator = this.previous();
       const right = this.equality();
-
-      expr = createLogical(expr, operator, right);
+      expr = new Logical(expr, operator, right);
     }
 
     return expr;
   }
 
-  //equality → comparison ( ( "!=" | "==" ) comparison )* ;
+  // equality → comparison ( ( "!=" | "==" ) comparison )* ;
   private equality(): Expr {
     let expr = this.comparison();
 
     while (this.match('BANG_EQUAL', 'EQUAL_EQUAL')) {
       const operator = this.previous();
       const right = this.comparison();
-
-      expr = createBinary(expr, operator, right);
+      expr = new Binary(expr, operator, right);
     }
 
     return expr;
@@ -245,8 +224,7 @@ export class Parser {
     while (this.match('GREATER', 'GREATER_EQUAL', 'LESS', 'LESS_EQUAL')) {
       const operator = this.previous();
       const right = this.term();
-
-      expr = createBinary(expr, operator, right);
+      expr = new Binary(expr, operator, right);
     }
 
     return expr;
@@ -259,8 +237,7 @@ export class Parser {
     while (this.match('MINUS', 'PLUS')) {
       const operator = this.previous();
       const right = this.factor();
-
-      expr = createBinary(expr, operator, right);
+      expr = new Binary(expr, operator, right);
     }
 
     return expr;
@@ -273,8 +250,7 @@ export class Parser {
     while (this.match('SLASH', 'STAR')) {
       const operator = this.previous();
       const right = this.unary();
-
-      expr = createBinary(expr, operator, right);
+      expr = new Binary(expr, operator, right);
     }
 
     return expr;
@@ -285,8 +261,7 @@ export class Parser {
     if (this.match('BANG', 'MINUS')) {
       const operator = this.previous();
       const right = this.unary();
-
-      return createUnary(operator, right);
+      return new Unary(operator, right);
     }
 
     return this.call();
@@ -307,6 +282,7 @@ export class Parser {
     return expr;
   }
 
+  // args → expression ( "," expression )* ;
   private finishCall(callee: Expr): Expr {
     const args: Expr[] = [];
 
@@ -315,42 +291,41 @@ export class Parser {
         if (args.length >= 255) {
           this.error(this.peek(), 'Cannot have more than 255 arguments.');
         }
-
         args.push(this.expression());
       } while (this.match('COMMA'));
     }
 
     const paren = this.consume('RIGHT_PAREN', 'Expect ")" after arguments.');
 
-    return createCall(callee, paren, args);
+    return new Call(callee, paren, args);
   }
 
-  // primary → NUMBER | STRING | "true" | "false" | "nil" | "(" expression ")" ;
+  // primary → NUMBER | STRING | "true" | "false" | "nil" | "(" expression ")" | IDENTIFIER ;
   private primary(): Expr {
     if (this.match('FALSE')) {
-      return createLiteral(false);
+      return new Literal(false);
     }
 
     if (this.match('TRUE')) {
-      return createLiteral(true);
+      return new Literal(true);
     }
 
     if (this.match('NIL')) {
-      return createLiteral(null);
+      return new Literal(null);
     }
+
     if (this.match('NUMBER', 'STRING')) {
-      return createLiteral(this.previous().literal);
+      return new Literal(this.previous().literal);
     }
 
     if (this.match('IDENTIFIER')) {
-      return createVariable(this.previous());
+      return new Variable(this.previous());
     }
 
     if (this.match('LEFT_PAREN')) {
       const expr = this.expression();
       this.consume('RIGHT_PAREN', 'Expect ")" after expression.');
-
-      return createGrouping(expr);
+      return new Grouping(expr);
     }
 
     throw this.error(this.peek(), 'Expect expression.');
@@ -365,7 +340,7 @@ export class Parser {
   }
 
   private error(token: Token, message: string): ParseError {
-    Lox.tokenError(token, message);
+    Lox.error(token, message);
     return new ParseError(message);
   }
 
@@ -384,7 +359,6 @@ export class Parser {
     if (this.isAtEnd()) {
       return false;
     }
-
     return this.peek().type === type;
   }
 
@@ -392,7 +366,6 @@ export class Parser {
     if (!this.isAtEnd()) {
       this.current++;
     }
-
     return this.previous();
   }
 
@@ -411,30 +384,26 @@ export class Parser {
   private printStatement(): Stmt {
     const value = this.expression();
     this.consume('SEMICOLON', 'Expect ";" after value.');
-
-    return createPrint(value);
+    return new Print(value);
   }
 
   private expressionStatement(): Stmt {
     const expr = this.expression();
     this.consume('SEMICOLON', 'Expect ";" after expression.');
-
-    return createExpression(expr);
+    return new Expression(expr);
   }
 
   private block(): Stmt[] {
     const statements: Stmt[] = [];
 
     while (!this.check('RIGHT_BRACE') && !this.isAtEnd()) {
-      const stmt = this.declaration();
-
-      if (stmt !== null) {
-        statements.push(stmt);
+      const statement = this.declaration();
+      if (statement != null) {
+        statements.push(statement);
       }
     }
 
     this.consume('RIGHT_BRACE', 'Expect "}" after block.');
-
     return statements;
   }
 

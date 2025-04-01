@@ -1,7 +1,7 @@
-import { Stmt } from 'src/Stmt';
+import type { Interpreter } from 'src/Interpreter';
 
 export interface LoxCallable {
   __type: 'LoxCallable';
   arity: number;
-  call(interpreter: (statements: Stmt[]) => void, args: unknown[]): unknown;
+  call(interpreter: Interpreter, args: unknown[]): unknown;
 }

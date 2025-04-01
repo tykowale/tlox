@@ -1,110 +1,85 @@
 import { Expr } from 'src/Expr';
 import { Token } from 'src/Token';
 
-export type Stmt = BlockStmt | ExpressionStmt | IfStmt | PrintStmt | VarStmt | WhileStmt;
-
-export interface BlockStmt {
-  type: 'block';
-  statements: Stmt[];
+export interface StmtVisitor<R> {
+  visitBlockStmt(stmt: Block): R;
+  visitExpressionStmt(stmt: Expression): R;
+  visitIfStmt(stmt: If): R;
+  visitPrintStmt(stmt: Print): R;
+  visitVarStmt(stmt: Var): R;
+  visitWhileStmt(stmt: While): R;
 }
 
-export interface ExpressionStmt {
-  type: 'expression';
-  expression: Expr;
+export abstract class Stmt {
+  abstract accept<R>(visitor: StmtVisitor<R>): R;
 }
 
-export interface IfStmt {
-  type: 'if';
-  condition: Expr;
-  thenBranch: Stmt;
-  elseBranch: Stmt | null;
+export class Block extends Stmt {
+  constructor(public readonly statements: Stmt[]) {
+    super();
+  }
+
+  accept<R>(visitor: StmtVisitor<R>): R {
+    return visitor.visitBlockStmt(this);
+  }
 }
 
-export interface PrintStmt {
-  type: 'print';
-  expression: Expr;
+export class Expression extends Stmt {
+  constructor(public readonly expression: Expr) {
+    super();
+  }
+
+  accept<R>(visitor: StmtVisitor<R>): R {
+    return visitor.visitExpressionStmt(this);
+  }
 }
 
-export interface VarStmt {
-  type: 'var';
-  name: Token;
-  initializer: Expr;
+export class If extends Stmt {
+  constructor(
+    public readonly condition: Expr,
+    public readonly thenBranch: Stmt,
+    public readonly elseBranch: Stmt | null,
+  ) {
+    super();
+  }
+
+  accept<R>(visitor: StmtVisitor<R>): R {
+    return visitor.visitIfStmt(this);
+  }
 }
 
-export interface WhileStmt {
-  type: 'while';
-  condition: Expr;
-  body: Stmt;
+export class Print extends Stmt {
+  constructor(public readonly expression: Expr) {
+    super();
+  }
+
+  accept<R>(visitor: StmtVisitor<R>): R {
+    return visitor.visitPrintStmt(this);
+  }
 }
 
-export function createBlock(statements: Stmt[]): BlockStmt {
-  return {
-    type: 'block',
-    statements,
-  };
+export class Var extends Stmt {
+  constructor(
+    public readonly name: Token,
+    public readonly initializer: Expr,
+  ) {
+    super();
+  }
+
+  accept<R>(visitor: StmtVisitor<R>): R {
+    return visitor.visitVarStmt(this);
+  }
 }
 
-export function createExpression(expression: Expr): ExpressionStmt {
-  return {
-    type: 'expression',
-    expression,
-  };
-}
+export class While extends Stmt {
+  constructor(
+    public readonly condition: Expr,
+    public readonly body: Stmt,
+  ) {
+    super();
+  }
 
-export function createIf(condition: Expr, thenBranch: Stmt, elseBranch: Stmt | null): IfStmt {
-  return {
-    type: 'if',
-    condition,
-    thenBranch,
-    elseBranch,
-  };
-}
-
-export function createPrint(expression: Expr): PrintStmt {
-  return {
-    type: 'print',
-    expression,
-  };
-}
-
-export function createVar(name: Token, initializer: Expr): VarStmt {
-  return {
-    type: 'var',
-    name,
-    initializer,
-  };
-}
-
-export function createWhile(condition: Expr, body: Stmt): WhileStmt {
-  return {
-    type: 'while',
-    condition,
-    body,
-  };
-}
-
-export type StmtMatcher<R> = {
-  block: (b: BlockStmt) => R;
-  expression: (e: ExpressionStmt) => R;
-  if: (i: IfStmt) => R;
-  print: (p: PrintStmt) => R;
-  var: (v: VarStmt) => R;
-  while: (w: WhileStmt) => R;
-};
-
-export function matchStmt<R>(stmt: Stmt, matcher: StmtMatcher<R>): R {
-  switch (stmt.type) {
-    case 'block':
-      return matcher.block(stmt as BlockStmt);
-    case 'expression':
-      return matcher.expression(stmt as ExpressionStmt);
-    case 'if':
-      return matcher.if(stmt as IfStmt);
-    case 'print':
-      return matcher.print(stmt as PrintStmt);
-    case 'var':
-      return matcher.var(stmt as VarStmt);
-    case 'while':
-      return matcher.while(stmt as WhileStmt);
+  accept<R>(visitor: StmtVisitor<R>): R {
+    return visitor.visitWhileStmt(this);
   }
 }

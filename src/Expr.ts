@@ -1,155 +1,114 @@
 import { Token } from 'src/Token';
 
-export type Expr =
-  | AssignExpr
-  | BinaryExpr
-  | CallExpr
-  | GroupingExpr
-  | LiteralExpr
-  | LogicalExpr
-  | UnaryExpr
-  | VariableExpr;
-
-export interface AssignExpr {
-  type: 'assign';
-  name: Token;
-  value: Expr;
+export interface ExprVisitor<R> {
+  visitAssignExpr(expr: Assign): R;
+  visitBinaryExpr(expr: Binary): R;
+  visitCallExpr(expr: Call): R;
+  visitGroupingExpr(expr: Grouping): R;
+  visitLiteralExpr(expr: Literal): R;
+  visitLogicalExpr(expr: Logical): R;
+  visitUnaryExpr(expr: Unary): R;
+  visitVariableExpr(expr: Variable): R;
 }
 
-export interface BinaryExpr {
-  type: 'binary';
-  left: Expr;
-  operator: Token;
-  right: Expr;
+export abstract class Expr {
+  abstract accept<R>(visitor: ExprVisitor<R>): R;
 }
 
-export interface CallExpr {
-  type: 'call';
-  callee: Expr;
-  paren: Token;
-  args: Expr[];
+export class Assign extends Expr {
+  constructor(
+    public readonly name: Token,
+    public readonly value: Expr,
+  ) {
+    super();
+  }
+
+  accept<R>(visitor: ExprVisitor<R>): R {
+    return visitor.visitAssignExpr(this);
+  }
 }
 
-export interface GroupingExpr {
-  type: 'grouping';
-  expression: Expr;
+export class Binary extends Expr {
+  constructor(
+    public readonly left: Expr,
+    public readonly operator: Token,
+    public readonly right: Expr,
+  ) {
+    super();
+  }
+
+  accept<R>(visitor: ExprVisitor<R>): R {
+    return visitor.visitBinaryExpr(this);
+  }
 }
 
-export interface LiteralExpr {
-  type: 'literal';
-  value: unknown;
+export class Call extends Expr {
+  constructor(
+    public readonly callee: Expr,
+    public readonly paren: Token,
+    public readonly args: Expr[],
+  ) {
+    super();
+  }
+
+  accept<R>(visitor: ExprVisitor<R>): R {
+    return visitor.visitCallExpr(this);
+  }
 }
 
-export interface LogicalExpr {
-  type: 'logical';
-  left: Expr;
-  operator: Token;
-  right: Expr;
+export class Grouping extends Expr {
+  constructor(public readonly expression: Expr) {
+    super();
+  }
+
+  accept<R>(visitor: ExprVisitor<R>): R {
+    return visitor.visitGroupingExpr(this);
+  }
 }
 
-export interface UnaryExpr {
-  type: 'unary';
-  operator: Token;
-  right: Expr;
+export class Literal extends Expr {
+  constructor(public readonly value: unknown) {
+    super();
+  }
+
+  accept<R>(visitor: ExprVisitor<R>): R {
+    return visitor.visitLiteralExpr(this);
+  }
 }
 
-export interface VariableExpr {
-  type: 'variable';
-  name: Token;
+export class Logical extends Expr {
+  constructor(
+    public readonly left: Expr,
+    public readonly operator: Token,
+    public readonly right: Expr,
+  ) {
+    super();
+  }
+
+  accept<R>(visitor: ExprVisitor<R>): R {
+    return visitor.visitLogicalExpr(this);
+  }
 }
 
-export function createAssign(name: Token, value: Expr): AssignExpr {
-  return {
-    type: 'assign',
-    name,
-    value,
-  };
+export class Unary extends Expr {
+  constructor(
+    public readonly operator: Token,
+    public readonly right: Expr,
+  ) {
+    super();
+  }
+
+  accept<R>(visitor: ExprVisitor<R>): R {
+    return visitor.visitUnaryExpr(this);
+  }
 }
 
-export function createBinary(left: Expr, operator: Token, right: Expr): BinaryExpr {
-  return {
-    type: 'binary',
-    left,
-    operator,
-    right,
-  };
-}
+export class Variable extends Expr {
+  constructor(public readonly name: Token) {
+    super();
+  }
 
-export function createCall(callee: Expr, paren: Token, args: Expr[]): CallExpr {
-  return {
-    type: 'call',
-    callee,
-    paren,
-    args,
-  };
-}
-
-export function createGrouping(expression: Expr): GroupingExpr {
-  return {
-    type: 'grouping',
-    expression,
-  };
-}
-
-export function createLiteral(value: unknown): LiteralExpr {
-  return {
-    type: 'literal',
-    value,
-  };
-}
-
-export function createLogical(left: Expr, operator: Token, right: Expr): LogicalExpr {
-  return {
-    type: 'logical',
-    left,
-    operator,
-    right,
-  };
-}
-
-export function createUnary(operator: Token, right: Expr): UnaryExpr {
-  return {
-    type: 'unary',
-    operator,
-    right,
-  };
-}
-
-export function createVariable(name: Token): VariableExpr {
-  return {
-    type: 'variable',
-    name,
-  };
-}
-
-export type ExprMatcher<R> = {
-  assign: (a: AssignExpr) => R;
-  binary: (b: BinaryExpr) => R;
-  call: (c: CallExpr) => R;
-  grouping: (g: GroupingExpr) => R;
-  literal: (l: LiteralExpr) => R;
-  logical: (l: LogicalExpr) => R;
-  unary: (u: UnaryExpr) => R;
-  variable: (v: VariableExpr) => R;
-};
-
-export function matchExpr<R>(expr: Expr, matcher: ExprMatcher<R>): R {
-  switch (expr.type) {
-    case 'assign':
-      return matcher.assign(expr as AssignExpr);
-    case 'binary':
-      return matcher.binary(expr as BinaryExpr);
-    case 'call':
-      return matcher.call(expr as CallExpr);
-    case 'grouping':
-      return matcher.grouping(expr as GroupingExpr);
-    case 'literal':
-      return matcher.literal(expr as LiteralExpr);
-    case 'logical':
-      return matcher.logical(expr as LogicalExpr);
-    case 'unary':
-      return matcher.unary(expr as UnaryExpr);
-    case 'variable':
-      return matcher.variable(expr as VariableExpr);
+  accept<R>(visitor: ExprVisitor<R>): R {
+    return visitor.visitVariableExpr(this);
   }
 }

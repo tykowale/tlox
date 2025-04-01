@@ -103,85 +103,46 @@ const stmtDefinitions = [
 //------------------------------------------------------------------------------
 // Code Generation Functions
 //------------------------------------------------------------------------------
-function defineUnionType(writer, baseName, definitions) {
-  writer.writeln(
-    `export type ${baseName} = ${definitions
-      .map(def => `${def.className}${baseName}`)
-      .join(' | ')};`,
-  );
-  writer.writeln('');
-}
-
-function defineInterface(writer, baseName, className, fieldList) {
-  writer.writeln(`export interface ${className}${baseName} {`);
-  writer.writeln(`  type: '${className.toLowerCase()}';`);
-
-  for (const field of fieldList) {
-    const optionalMarker = field.optional ? '?' : '';
-    writer.writeln(`  ${field.name}${optionalMarker}: ${field.type};`);
-  }
-
-  writer.writeln('}');
-  writer.writeln('');
-}
-
-function defineFactory(writer, baseName, className, fieldList) {
-  // Prepare parameters list
-  const params = fieldList
-    .map(field => {
-      const optionalMarker = field.optional ? '?' : '';
-      return `${field.name}${optionalMarker}: ${field.type}`;
-    })
-    .join(', ');
-
-  writer.writeln(`export function create${className}(${params}): ${className}${baseName} {`);
-  writer.writeln('  return {');
-  writer.writeln(`    type: '${className.toLowerCase()}',`);
-
-  for (const field of fieldList) {
-    writer.writeln(`    ${field.name},`);
-  }
-
-  writer.writeln('  };');
-  writer.writeln('}');
-  writer.writeln('');
-}
-
-function defineMatcher(writer, baseName, definitions) {
-  writer.writeln(`export type ${baseName}Matcher<R> = {`);
+function defineVisitor(writer, baseName, definitions) {
+  writer.writeln(`export interface ${baseName}Visitor<R> {`);
 
   for (const def of definitions) {
-    const typeName = def.className.toLowerCase();
-    writer.writeln(`  ${typeName}: (${typeName.charAt(0)}: ${def.className}${baseName}) => R;`);
-  }
-
-  writer.writeln('};');
-  writer.writeln('');
-}
-
-function defineMatchFunction(writer, baseName, definitions) {
-  writer.writeln(
-    `export function match${baseName}<R>(${baseName.toLowerCase()}: ${baseName}, matcher: ${baseName}Matcher<R>): R {`,
-  );
-  writer.writeln(`  switch (${baseName.toLowerCase()}.type) {`);
-
-  for (const def of definitions) {
-    const typeName = def.className.toLowerCase();
-    writer.writeln(`    case '${typeName}':`);
     writer.writeln(
-      `      return matcher.${typeName}(${baseName.toLowerCase()} as ${def.className}${baseName});`,
+      `  visit${def.className}${baseName}(${baseName.toLowerCase()}: ${def.className}): R;`,
     );
   }
 
-  writer.writeln('  }');
-  writer.writeln('}');
+  writer.writeln('}\n');
+}
+
+function defineBaseClass(writer, baseName) {
+  writer.writeln(`export abstract class ${baseName} {`);
+  writer.writeln(`  abstract accept<R>(visitor: ${baseName}Visitor<R>): R;`);
+  writer.writeln('}\n');
+}
+
+function defineClass(writer, baseName, className, fieldList) {
+  writer.writeln(`export class ${className} extends ${baseName} {`);
+
+  writer.writeln(`  constructor(`);
+  for (const field of fieldList) {
+    writer.writeln(`    public readonly ${field.name}: ${field.type},`);
+  }
+  writer.writeln(`  ) {`);
+  writer.writeln(`    super();`);
+  writer.writeln(`  }\n`);
+
+  writer.writeln(`  accept<R>(visitor: ${baseName}Visitor<R>): R {`);
+  writer.writeln(`    return visitor.visit${className}${baseName}(this);`);
+  writer.writeln(`  }`);
+
+  writer.writeln('}\n');
 }
 
 function generateAst(outputDir, baseName, definitions) {
   const outputPath = path.join(outputDir, `${baseName}.ts`);
   const writer = new PrintWriter(outputPath);
 
-  // Write imports
   if (baseName === 'Stmt') {
     writer.writeln(`import { Expr } from 'src/Expr';`);
     writer.writeln(`import { Token } from 'src/Token';`);
@@ -190,19 +151,13 @@ function generateAst(outputDir, baseName, definitions) {
   }
   writer.writeln('');
 
-  defineUnionType(writer, baseName, definitions);
+  defineVisitor(writer, baseName, definitions);
+
+  defineBaseClass(writer, baseName);
 
   for (const def of definitions) {
-    defineInterface(writer, baseName, def.className, def.args);
+    defineClass(writer, baseName, def.className, def.args);
   }
-
-  for (const def of definitions) {
-    defineFactory(writer, baseName, def.className, def.args);
-  }
-
-  defineMatcher(writer, baseName, definitions);
-
-  defineMatchFunction(writer, baseName, definitions);
 
   writer.close();
   console.log(`Generated ${outputPath}`);
