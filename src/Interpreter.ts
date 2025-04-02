@@ -1,39 +1,18 @@
-import {
-  Assign,
-  Binary,
-  Call,
-  Expr,
-  ExprVisitor,
-  Grouping,
-  Literal,
-  Logical,
-  Unary,
-  Variable,
-} from 'src/Expr';
+import { Assign, Binary, Call, Expr, Grouping, Literal, Logical, Unary, Variable } from 'src/Expr';
 import { RuntimeError } from 'src/Errors';
 import { isTruthy, checkNumberOperand } from 'src/RuntimeChecks';
-import { Block, Expression, If, Print, Stmt, StmtVisitor, Var, While } from 'src/Stmt';
+import { Block, Expression, If, Print, Stmt, Var, While } from 'src/Stmt';
 import { Environment } from 'src/Environment';
+import type { IInterpreter } from 'src/types';
+import { Clock } from 'src/Clock';
+import { isLoxCallable } from 'src/LoxCallable';
 
-// Forward declare to avoid circular dependency
-interface LoxCallable {
-  __type: 'LoxCallable';
-  arity: number;
-  // Using 'any' to avoid circular dependency with Interpreter
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  call(interpreter: any, args: unknown[]): unknown;
-}
-
-export class Interpreter implements ExprVisitor<unknown>, StmtVisitor<void> {
+export class Interpreter implements IInterpreter {
   private globals = new Environment();
   private environment = this.globals;
 
   constructor() {
-    this.globals.define('clock', {
-      __type: 'LoxCallable',
-      arity: 0,
-      call: () => Date.now(),
-    });
+    this.globals.define('clock', new Clock());
   }
 
   interpret(statements: Stmt[]): void {
@@ -157,29 +136,18 @@ export class Interpreter implements ExprVisitor<unknown>, StmtVisitor<void> {
       args.push(this.evaluate(argument));
     }
 
-    if (!this.isCallable(callee)) {
+    if (!isLoxCallable(callee)) {
       throw new RuntimeError(expr.paren, 'Can only call functions and classes.');
     }
 
-    const loxCallable = callee as LoxCallable;
-
-    if (args.length !== loxCallable.arity) {
+    if (args.length !== callee.arity) {
       throw new RuntimeError(
         expr.paren,
-        `Expected ${loxCallable.arity} arguments but got ${args.length}.`,
+        `Expected ${callee.arity} arguments but got ${args.length}.`,
       );
     }
 
-    return loxCallable.call(this, args);
-  }
-
-  private isCallable(callee: unknown): callee is LoxCallable {
-    return (
-      typeof callee === 'object' &&
-      callee !== null &&
-      '__type' in callee &&
-      (callee as any).__type === 'LoxCallable'
-    );
+    return callee.call(this, args);
   }
 
   visitExpressionStmt(stmt: Expression): void {
