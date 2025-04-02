@@ -5,14 +5,17 @@ import type { IInterpreter } from 'src/types';
 import { ReturnError } from 'src/Errors';
 
 export class LoxFunction implements LoxCallable {
-  constructor(private readonly declaration: LFunction) {}
+  constructor(
+    private readonly declaration: LFunction,
+    private readonly closure: Environment,
+  ) {}
 
   get arity(): number {
     return this.declaration.params.length;
   }
 
   call(interpreter: IInterpreter, args: unknown[]): unknown {
-    const environment = new Environment(interpreter.globals);
+    const environment = new Environment(this.closure);
 
     this.declaration.params.forEach((param, index) => {
       environment.define(param.lexeme, args[index]);
