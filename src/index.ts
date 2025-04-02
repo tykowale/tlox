@@ -4,7 +4,7 @@ import { Scanner } from 'src/Scanner';
 import { Token } from 'src/Token';
 import { Parser } from 'src/Parser';
 import { RuntimeError } from 'src/Errors';
-import { interpret } from 'src/Interpreter';
+import { Interpreter } from 'src/Interpreter';
 
 export class Lox {
   protected static hadError: boolean = false;
@@ -58,8 +58,8 @@ export class Lox {
     if (expr == null) {
       return;
     }
-
-    interpret(expr);
+    const interpreter = new Interpreter();
+    interpreter.interpret(expr);
   }
 
   public static error(line: number | Token, message: string): void {

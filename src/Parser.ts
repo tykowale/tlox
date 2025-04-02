@@ -3,7 +3,7 @@ import { Expr, Assign, Binary, Call, Grouping, Literal, Logical, Unary, Variable
 import { TokenType } from 'src/TokenType';
 import { Lox } from 'src/index';
 import { ParseError } from 'src/Errors';
-import { Block, Expression, If, Print, Stmt, Var, While } from 'src/Stmt';
+import { Block, Expression, If, Print, Stmt, Var, While, LFunction } from 'src/Stmt';
 
 export class Parser {
   private current = 0;
@@ -24,9 +24,13 @@ export class Parser {
     return statements;
   }
 
-  // declaration → varDecl | statement ;
+  // declaration → funDecl | varDecl | statement ;
   private declaration(): Stmt | null {
     try {
+      if (this.match('FUN')) {
+        return this.function('function');
+      }
+
       if (this.match('VAR')) {
         return this.varDeclaration();
       }
@@ -40,6 +44,30 @@ export class Parser {
 
       throw error;
     }
+  }
+
+  private function(kind: string): LFunction {
+    const name = this.consume('IDENTIFIER', `Expect ${kind} name.`);
+    this.consume('LEFT_PAREN', `Expect '(' after ${kind} name.`);
+
+    const params: Token[] = [];
+    if (!this.check('RIGHT_PAREN')) {
+      do {
+        if (params.length >= 255) {
+          this.error(this.peek(), 'Cannot have more than 255 parameters.');
+        }
+
+        params.push(this.consume('IDENTIFIER', 'Expect parameter name.'));
+      } while (this.match('COMMA'));
+    }
+
+    this.consume('RIGHT_PAREN', 'Expect ")" after parameters.');
+
+    this.consume('LEFT_BRACE', 'Expect "{" before function body.');
+
+    const body = this.block();
+
+    return new LFunction(name, params, body);
   }
 
   // varDecl → "var" IDENTIFIER ( "=" expression )? ";" ;

@@ -73,6 +73,14 @@ const stmtDefinitions = [
     args: [{ type: 'Expr', name: 'expression' }],
   },
   {
+    className: 'LFunction',
+    args: [
+      { type: 'Token', name: 'name' },
+      { type: 'Token[]', name: 'params' },
+      { type: 'Stmt[]', name: 'body' },
+    ],
+  },
+  {
     className: 'If',
     args: [
       { type: 'Expr', name: 'condition' },

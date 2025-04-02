@@ -1,15 +1,16 @@
 import { Assign, Binary, Call, Expr, Grouping, Literal, Logical, Unary, Variable } from 'src/Expr';
 import { RuntimeError } from 'src/Errors';
 import { isTruthy, checkNumberOperand } from 'src/RuntimeChecks';
-import { Block, Expression, If, Print, Stmt, Var, While } from 'src/Stmt';
+import { Block, Expression, If, LFunction, Print, Stmt, Var, While } from 'src/Stmt';
 import { Environment } from 'src/Environment';
 import type { IInterpreter } from 'src/types';
 import { Clock } from 'src/Clock';
 import { isLoxCallable } from 'src/LoxCallable';
+import { LoxFunction } from 'src/LoxFunction';
 
 export class Interpreter implements IInterpreter {
-  private globals = new Environment();
-  private environment = this.globals;
+  public globals = new Environment();
+  public environment = this.globals;
 
   constructor() {
     this.globals.define('clock', new Clock());
@@ -154,6 +155,12 @@ export class Interpreter implements IInterpreter {
     this.evaluate(stmt.expression);
   }
 
+  visitLFunctionStmt(stmt: LFunction): unknown {
+    const fn = new LoxFunction(stmt);
+    this.environment.define(stmt.name.lexeme, fn);
+    return null;
+  }
+
   visitPrintStmt(stmt: Print): void {
     const value = this.evaluate(stmt.expression);
     console.log(value);
@@ -206,13 +213,4 @@ export class Interpreter implements IInterpreter {
       this.environment = previous;
     }
   }
-}
-
-// Create and export a singleton instance
-const interpreter = new Interpreter();
-export { interpreter };
-
-// Export a function to match the previous API
-export function interpret(statements: Stmt[]): void {
-  interpreter.interpret(statements);
 }

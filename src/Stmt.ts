@@ -4,6 +4,7 @@ import { Token } from 'src/Token';
 export interface StmtVisitor<R> {
   visitBlockStmt(stmt: Block): R;
   visitExpressionStmt(stmt: Expression): R;
+  visitLFunctionStmt(stmt: LFunction): R;
   visitIfStmt(stmt: If): R;
   visitPrintStmt(stmt: Print): R;
   visitVarStmt(stmt: Var): R;
@@ -31,6 +32,20 @@ export class Expression extends Stmt {
 
   accept<R>(visitor: StmtVisitor<R>): R {
     return visitor.visitExpressionStmt(this);
+  }
+}
+
+export class LFunction extends Stmt {
+  constructor(
+    public readonly name: Token,
+    public readonly params: Token[],
+    public readonly body: Stmt[],
+  ) {
+    super();
+  }
+
+  accept<R>(visitor: StmtVisitor<R>): R {
+    return visitor.visitLFunctionStmt(this);
   }
 }
 
