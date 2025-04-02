@@ -1,7 +1,7 @@
 import { Assign, Binary, Call, Expr, Grouping, Literal, Logical, Unary, Variable } from 'src/Expr';
-import { RuntimeError } from 'src/Errors';
+import { ReturnError, RuntimeError } from 'src/Errors';
 import { isTruthy, checkNumberOperand } from 'src/RuntimeChecks';
-import { Block, Expression, If, LFunction, Print, Stmt, Var, While } from 'src/Stmt';
+import { Block, Expression, If, LFunction, Print, Return, Stmt, Var, While } from 'src/Stmt';
 import { Environment } from 'src/Environment';
 import type { IInterpreter } from 'src/types';
 import { Clock } from 'src/Clock';
@@ -164,6 +164,12 @@ export class Interpreter implements IInterpreter {
   visitPrintStmt(stmt: Print): void {
     const value = this.evaluate(stmt.expression);
     console.log(value);
+  }
+
+  visitReturnStmt(stmt: Return): void {
+    const value: Expr = stmt.value ? (this.evaluate(stmt.value) as Expr) : new Literal(null);
+
+    throw new ReturnError(value);
   }
 
   visitVarStmt(stmt: Var): void {

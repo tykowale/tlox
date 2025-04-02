@@ -2,6 +2,7 @@ import { LoxCallable } from 'src/LoxCallable';
 import { Environment } from 'src/Environment';
 import { LFunction } from 'src/Stmt';
 import type { IInterpreter } from 'src/types';
+import { ReturnError } from 'src/Errors';
 
 export class LoxFunction implements LoxCallable {
   constructor(private readonly declaration: LFunction) {}
@@ -17,7 +18,16 @@ export class LoxFunction implements LoxCallable {
       environment.define(param.lexeme, args[index]);
     });
 
-    interpreter.executeBlock(this.declaration.body, environment);
+    try {
+      interpreter.executeBlock(this.declaration.body, environment);
+    } catch (error) {
+      if (error instanceof ReturnError) {
+        return error.value;
+      }
+
+      throw error;
+    }
+
     return null;
   }
 }

@@ -57,7 +57,9 @@ export class Call extends Expr {
 }
 
 export class Grouping extends Expr {
-  constructor(public readonly expression: Expr) {
+  constructor(
+    public readonly expression: Expr,
+  ) {
     super();
   }
 
@@ -67,7 +69,9 @@ export class Grouping extends Expr {
 }
 
 export class Literal extends Expr {
-  constructor(public readonly value: unknown) {
+  constructor(
+    public readonly value: unknown,
+  ) {
     super();
   }
 
@@ -104,7 +108,9 @@ export class Unary extends Expr {
 }
 
 export class Variable extends Expr {
-  constructor(public readonly name: Token) {
+  constructor(
+    public readonly name: Token,
+  ) {
     super();
   }
 
@@ -112,3 +118,4 @@ export class Variable extends Expr {
     return visitor.visitVariableExpr(this);
   }
 }
+

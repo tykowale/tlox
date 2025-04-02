@@ -7,6 +7,7 @@ export interface StmtVisitor<R> {
   visitLFunctionStmt(stmt: LFunction): R;
   visitIfStmt(stmt: If): R;
   visitPrintStmt(stmt: Print): R;
+  visitReturnStmt(stmt: Return): R;
   visitVarStmt(stmt: Var): R;
   visitWhileStmt(stmt: While): R;
 }
@@ -70,6 +71,19 @@ export class Print extends Stmt {
 
   accept<R>(visitor: StmtVisitor<R>): R {
     return visitor.visitPrintStmt(this);
+  }
+}
+
+export class Return extends Stmt {
+  constructor(
+    public readonly keyword: Token,
+    public readonly value: Expr,
+  ) {
+    super();
+  }
+
+  accept<R>(visitor: StmtVisitor<R>): R {
+    return visitor.visitReturnStmt(this);
   }
 }
 

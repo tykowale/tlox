@@ -16,3 +16,7 @@ export class RuntimeError extends Error {
     this.name = 'RuntimeError';
   }
 }
+
+export class ReturnError {
+  constructor(public readonly value: unknown) {}
+}

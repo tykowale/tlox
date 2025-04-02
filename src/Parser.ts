@@ -3,7 +3,7 @@ import { Expr, Assign, Binary, Call, Grouping, Literal, Logical, Unary, Variable
 import { TokenType } from 'src/TokenType';
 import { Lox } from 'src/index';
 import { ParseError } from 'src/Errors';
-import { Block, Expression, If, Print, Stmt, Var, While, LFunction } from 'src/Stmt';
+import { Block, Expression, If, Print, Return, Stmt, Var, While, LFunction } from 'src/Stmt';
 
 export class Parser {
   private current = 0;
@@ -84,7 +84,7 @@ export class Parser {
     return new Var(name, initializer);
   }
 
-  // statement → exprStmt | forStmt | ifStmt | printStmt | whileStmt | block;
+  // statement → exprStmt | forStmt | ifStmt | printStmt | returnStmt | whileStmt | block;
   private statement(): Stmt {
     if (this.match('FOR')) {
       return this.forStatement();
@@ -98,6 +98,10 @@ export class Parser {
       return this.printStatement();
     }
 
+    if (this.match('RETURN')) {
+      return this.returnStatement();
+    }
+
     if (this.match('WHILE')) {
       return this.whileStatement();
     }
@@ -107,6 +111,19 @@ export class Parser {
     }
 
     return this.expressionStatement();
+  }
+
+  private returnStatement(): Stmt {
+    const keyword = this.previous();
+    let value: Expr = new Literal(null);
+
+    if (!this.check('SEMICOLON')) {
+      value = this.expression();
+    }
+
+    this.consume('SEMICOLON', 'Expect ";" after return value.');
+
+    return new Return(keyword, value);
   }
 
   // forStmt → "for" "(" ( varDecl | exprStmt | ";" ) expression? ";" expression? ")" statement ;

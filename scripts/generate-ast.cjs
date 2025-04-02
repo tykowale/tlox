@@ -93,6 +93,13 @@ const stmtDefinitions = [
     args: [{ type: 'Expr', name: 'expression' }],
   },
   {
+    className: 'Return',
+    args: [
+      { type: 'Token', name: 'keyword' },
+      { type: 'Expr', name: 'value' },
+    ],
+  },
+  {
     className: 'Var',
     args: [
       { type: 'Token', name: 'name' },
